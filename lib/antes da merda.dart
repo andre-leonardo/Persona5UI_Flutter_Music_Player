@@ -34,36 +34,35 @@ class HomeScreen extends StatelessWidget {
                     
                   ),
                   const SizedBox(height: 15),
-
-                  Stack(
-                  children:[
-                    Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Image.asset("assets/icons/searchbox.png"),
-                  ),
                   TextFormField(
                     style: const TextStyle(
                       fontFamily: 'Persona',
                       color: Color(0xffffffff)
                       ),
                     decoration:
-                     const InputDecoration(
-                      border: InputBorder.none,
+                     InputDecoration(
                       filled: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 50, vertical: 38),
-                      fillColor: Color.fromARGB(0, 0, 0, 0),
+                      fillColor: const Color(0xff000000),
                       hintText: 'Search',
-                      hintStyle: TextStyle(
+                      hintStyle: const TextStyle(
                         color: Color(0xffffffff),
                         fontSize: 13,    
                         ),
+                        prefixIcon: Image.asset("assets/icons/search.png", height: 50),
+                        border: const OutlineInputBorder(
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(10.0),
+                            topRight: Radius.circular(30.0),
+                            bottomLeft: Radius.circular(10.0),
+                            bottomRight: Radius.circular(10.0),
+                        ),
+                          borderSide: BorderSide(
+                          color: Colors.white,
+                          width: 2.0
+                          ),
+                          ),
                       // hintStyle: Theme.of(context).textTheme.bodyMedium.copyWith
                     ), 
-                  ),
-                  
-                  ]
                   )
                 ],
               ),
@@ -92,7 +91,6 @@ class _CustomNavBar extends StatelessWidget {
       items: [
       BottomNavigationBarItem(
         icon: Image.asset("assets/icons/home.png", height: 50), 
-        
         label: "Songs",
       ),
       BottomNavigationBarItem(

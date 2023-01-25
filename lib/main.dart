@@ -3,6 +3,7 @@ import 'package:prime_curso/home_screen.dart';
 import 'package:prime_curso/playlist_screen.dart';
 import 'package:prime_curso/song_screen.dart';
 import 'package:screens/screens.dart';
+import 'package:flutter/src/rendering/box.dart';
 import 'package:get/get.dart';
 
 void main() {
