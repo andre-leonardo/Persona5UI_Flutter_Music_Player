@@ -18,6 +18,7 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
+        fontFamily: 'Persona',
         textTheme: Theme.of(context).textTheme.apply(
           bodyColor: const Color(0xffff0505)
         )

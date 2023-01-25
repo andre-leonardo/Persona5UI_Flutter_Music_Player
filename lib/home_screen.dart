@@ -17,10 +17,33 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-      child: const Scaffold(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: _CustomAppBar(
-        ),
+        appBar: const _CustomAppBar(),
+        bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: const Color(0x00000000),
+          unselectedItemColor: Colors.white,
+          selectedItemColor: Colors.white,
+          selectedLabelStyle: const TextStyle(fontFamily: 'Persona', fontSize: 10),
+          unselectedLabelStyle: const TextStyle(fontFamily: 'Persona', fontSize: 10),
+          items: [
+          BottomNavigationBarItem(
+            icon: Image.asset("assets/icons/home.png", height: 50,), 
+            label: "Songs",
+          ),
+          BottomNavigationBarItem(
+            icon: Image.asset("assets/icons/favorite.png", height: 50,), 
+            label: "Favorites",
+          ),
+          BottomNavigationBarItem(
+            icon: Image.asset("assets/icons/playlists.png", height: 50,),
+            label: "Playlists",
+          ),
+          
+          
+        ]),
+        body: Container(),
       ),
     );
   }
