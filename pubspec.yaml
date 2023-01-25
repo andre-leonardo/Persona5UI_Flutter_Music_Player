@@ -87,6 +87,7 @@ flutter:
      - family: Persona
        fonts:
          - asset: assets/fonts/Persona5main.ttf
+           weight: 300
   #       - asset: fonts/Schyler-Italic.ttf
   #         style: italic
   #   - family: Trajan Pro
