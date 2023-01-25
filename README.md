@@ -1,4 +1,4 @@
-# prime_curso
+# Music Player with Persona's 5 UI
 
 A new Flutter project.
 
