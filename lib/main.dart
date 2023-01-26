@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:prime_curso/home_screen.dart';
-import 'package:prime_curso/playlist_screen.dart';
-import 'package:prime_curso/song_screen.dart';
+import 'package:phantom_tunes/home_screen.dart';
+import 'package:phantom_tunes/playlist_screen.dart';
+import 'package:phantom_tunes/song_screen.dart';
+import 'package:phantom_tunes/search_screen.dart';
 import 'package:screens/screens.dart';
 import 'package:flutter/src/rendering/box.dart';
 import 'package:get/get.dart';
@@ -35,6 +36,7 @@ class MyApp extends StatelessWidget {
           GetPage(name: '/', page: () => const HomeScreen()),
           GetPage(name: '/song', page: () => const SongScreen()),
           GetPage(name: '/playlist', page: () => const PlaylistScreen()),
+          GetPage(name: '/search', page: () => const SearchScreen()),
         ],
       ),
     );

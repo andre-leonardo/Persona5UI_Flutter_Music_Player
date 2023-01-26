@@ -1,5 +1,5 @@
-name: prime_curso
-description: A new Flutter project.
+name: phantom_tunes
+description: A music player with an user interface based on the game Persona 5.
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.

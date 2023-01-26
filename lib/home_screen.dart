@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phantom_tunes/search_screen.dart';
 
 
 class HomeScreen extends StatelessWidget {
@@ -17,54 +18,9 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Hi,    start    listening!',
-                    style: TextStyle(
-                      color: Color(0xffffffff),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  const Text(
-                    'Joel     Sungado!!!!!',
-                    style: TextStyle(
-                      color: Color(0xffffffff),
-                      fontFamily: 'Persona'
-                    ),
-                    
-                  ),
-                  const SizedBox(height: 15),
-
-                  Stack(
-                  children:[
-                    Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Image.asset("assets/icons/searchbox.png"),
-                  ),
-                  TextFormField(
-                    style: const TextStyle(
-                      fontFamily: 'Persona',
-                      color: Color(0xffffffff)
-                      ),
-                    decoration:
-                     const InputDecoration(
-                      border: InputBorder.none,
-                      filled: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 50, vertical: 38),
-                      fillColor: Color.fromARGB(0, 0, 0, 0),
-                      hintText: 'Search',
-                      hintStyle: TextStyle(
-                        color: Color(0xffffffff),
-                        fontSize: 13,    
-                        ),
-                      // hintStyle: Theme.of(context).textTheme.bodyMedium.copyWith
-                    ), 
-                  ),
-                  
-                  ]
-                  )
+                children: const [
+                  SizedBox(height: 5),
+                  SizedBox(height: 15),
                 ],
               ),
             )
@@ -87,8 +43,8 @@ class _CustomNavBar extends StatelessWidget {
       backgroundColor: const Color(0x00000000),
       unselectedItemColor: Colors.white,
       selectedItemColor: Colors.white,
-      // selectedLabelStyle: const TextStyle(fontFamily: 'Persona', fontSize: 10),
-      // unselectedLabelStyle: const TextStyle(fontFamily: 'Persona', fontSize: 10),
+      selectedLabelStyle: const TextStyle(fontFamily: 'Persona', fontSize: 10),
+      unselectedLabelStyle: const TextStyle(fontFamily: 'Persona', fontSize: 10),
       items: [
       BottomNavigationBarItem(
         icon: Image.asset("assets/icons/home.png", height: 50), 
@@ -120,12 +76,20 @@ class _CustomAppBar extends StatelessWidget with PreferredSizeWidget {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      leading: const Icon(Icons.grid_view_rounded),
+      leading: Image.asset("assets/icons/logo.png",),
       actions: [
         Container(
-          margin: const EdgeInsets.only(right: 20),
-          child: const Image(
-            image: AssetImage("assets/images/persona.png"),
+          margin: const EdgeInsets.only(right: 10),
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context, 
+                MaterialPageRoute(builder: (context) => const SearchScreen()),
+              );
+            },
+            child: const Image(
+              image: AssetImage("assets/icons/search.png"),
+            ),
           ),
         )
       ],
