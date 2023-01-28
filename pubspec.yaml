@@ -96,6 +96,11 @@ flutter:
        fonts:
          - asset: assets/fonts/Persona5main.ttf
            weight: 300
+     - family: Arsenal
+       fonts:
+         - asset: assets/fonts/Arsenal-Regular.ttf
+         - asset: assets/fonts/Arsenal-Bold.ttf
+           weight: 700
   #       - asset: fonts/Schyler-Italic.ttf
   #         style: italic
   #   - family: Trajan Pro

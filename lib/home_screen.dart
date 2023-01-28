@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:phantom_tunes/search_screen.dart';
 import 'package:just_audio/just_audio.dart';
@@ -22,22 +23,109 @@ void toast(BuildContext context, String message) {
 
 
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   
   const HomeScreen({super.key});
+  
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+
+  final OnAudioQuery _audioQuery = OnAudioQuery();
+
+  //request permission from initStateMethod
+  @override
+  void initState() {
+    super.initState();
+    requestStoragePermission();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
         backgroundColor: Colors.transparent,
         appBar: _CustomAppBar(),
         bottomNavigationBar: _CustomNavBar(),
+        body: FutureBuilder<List<SongModel>>(
+          future: _audioQuery.querySongs(
+            sortType: null,
+            orderType: OrderType.ASC_OR_SMALLER,
+            uriType: UriType.EXTERNAL,
+            ignoreCase: true,
+          ),
+          builder: (context, item){
+            if(item.data == null){
+              return const Center(child: CircularProgressIndicator(),);   
+            }
+            if(item.data!.isEmpty){
+              return const Center(child: Text("No Songs Found"),);
+            }
+
+            return ListView.builder(
+              itemCount: item.data!.length,
+              itemBuilder: ((context, index) {
+                return Container(
+                  margin: const EdgeInsets.only(top: 5, left: 12, right: 15),
+                  padding: const EdgeInsets.only(top: 5, bottom: 15),
+                  decoration: const BoxDecoration(
+                    color: Colors.black
+                  ),
+
+                  child: ListTile(
+                      title: Text(item.data![index].title,
+                          style: const TextStyle(
+                              color: Color(0xffffffff),
+                              fontFamily: 'Arsenal',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                      ),
+                      subtitle: Text(item.data![index].displayName,
+                          style: const TextStyle(
+                              color: Color(0xffffffff),
+                              fontFamily: 'Arsenal',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w300
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                      ),
+                      trailing: const Icon(Icons.more_vert),
+                      leading: QueryArtworkWidget(
+                          id: item.data![index].id,
+                          type: ArtworkType.AUDIO,
+                      )
+                    ),
+
+                );
+              }),
+            );
+          },
+        ),
           
       );
     
   }
+  
+  void requestStoragePermission() async {
+    //only if the platform is not web, coz web have no permissions
+    if(!kIsWeb){
+      bool permissionStatus = await _audioQuery.permissionsStatus();
+      if(!permissionStatus){
+        await _audioQuery.permissionsRequest();
+      }
+
+      //ensure build method is called
+      setState(() { });
+    }
+  }
 }
+
 
 
 class _CustomNavBar extends StatelessWidget {
