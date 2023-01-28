@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phantom_tunes/home_screen.dart';
 
 class SearchScreen extends StatelessWidget{
   const SearchScreen({super.key});
@@ -76,9 +77,32 @@ class _CustomAppBar extends StatelessWidget with PreferredSizeWidget {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      leading: Image.asset("assets/icons/logo.png",),
+      leading: InkWell(
+    onTap: () {
+        Navigator.push(
+    context,
+    PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 500),
+        pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
+            return const  HomeScreen();
+        },
+        transitionsBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
+            return SlideTransition(
+                position: Tween<Offset>(
+                    begin: const Offset(-1.0, 0.0),
+                    end: Offset.zero,
+                ).animate(animation),
+                child: child,
+            );
+        }
+    )
+);
+    },
+    child: Image.asset("assets/icons/arrow.png",),
+),
+      
     );
   }
   @override
-  Size get preferredSize => const Size.fromHeight(56);
+  Size get preferredSize => const Size.fromHeight(50);
 }

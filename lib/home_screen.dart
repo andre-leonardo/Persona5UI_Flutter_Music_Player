@@ -1,6 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:phantom_tunes/search_screen.dart';
 import 'package:just_audio/just_audio.dart';
+import 'dart:convert';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:on_audio_query/on_audio_query.dart';
+
+
+
+void toast(BuildContext context, String message) {
+  Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Colors.grey,
+      textColor: Colors.white,
+      fontSize: 16.0
+  );
+}
+
 
 
 class HomeScreen extends StatelessWidget {
@@ -10,45 +29,29 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: const _CustomAppBar(),
-        bottomNavigationBar: const _CustomNavBar(),
-        body: ListView(
-        children: [
-          ListTile(
-            leading: Icon(Icons.music_note),
-            title: Text("Song Title"),
-            subtitle: Text("Artist Name"),
-            onTap: () {
-              // Do something when the ListTile is tapped
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.music_note),
-            title: Text("Another Song"),
-            subtitle: Text("Another Artist"),
-            onTap: () {
-              // Do something when the ListTile is tapped
-            },
-          ),
-        ],
-      ),
+        appBar: _CustomAppBar(),
+        bottomNavigationBar: _CustomNavBar(),
+          
       );
     
   }
 }
+
 
 class _CustomNavBar extends StatelessWidget {
   const _CustomNavBar({
     Key? key,
   }) : super(key: key);
 
+  
+
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
-      backgroundColor: const Color(0x00000000),
+      backgroundColor: const Color(0xffff0505),
       unselectedItemColor: Colors.white,
       selectedItemColor: Colors.white,
       selectedLabelStyle: const TextStyle(fontFamily: 'Persona', fontSize: 10),
@@ -81,21 +84,21 @@ class _CustomAppBar extends StatelessWidget with PreferredSizeWidget {
 
   @override 
   Widget build(BuildContext context) {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      leading: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          return SizedBox(
-            width: constraints.maxWidth * 0.2, // 20% of the screen width
-            height: constraints.maxWidth * 0.2, // 20% of the screen width
-            child: Image.asset("assets/icons/logo.png"),
-          );
-        },
-      ),
-      actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 10),
+    return Stack(
+      children: [
+        AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        Positioned(
+          
+          top: 30,
+          left: -10,
+          child: Image.asset("assets/icons/logo.png", width: 160,),
+        ),
+        Positioned(
+          right: 20,
+          top: 40,
           child: InkWell(
             onTap: () {
               Navigator.push(
@@ -105,15 +108,17 @@ class _CustomAppBar extends StatelessWidget with PreferredSizeWidget {
             },
             child: const Image(
               image: AssetImage("assets/icons/search.png"),
-            ),
+              width: 38,)
           ),
-        )
+        ),
+        
       ],
     );
   }
   @override
   Size get preferredSize => const Size.fromHeight(100);
 }
+
 
 // class _CustomAppBar extends StatelessWidget with PreferredSizeWidget {
 //   const _CustomAppBar({
