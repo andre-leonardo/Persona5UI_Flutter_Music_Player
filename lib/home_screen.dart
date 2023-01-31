@@ -39,49 +39,65 @@ class HomeScreen extends StatefulWidget {
 
 class ImperfectRectangleBorder extends CustomPainter {
   final Color strokeColor;
-  ImperfectRectangleBorder({this.strokeColor = Colors.white});
+  final BuildContext context;
+  ImperfectRectangleBorder({this.strokeColor = Colors.white, required this.context});
 
   @override
   void paint(Canvas canvas, Size size) {
-    var paint = Paint()
-      ..color = strokeColor
-      ..strokeWidth = 4.0
-      ..style = PaintingStyle.stroke;
+  var screenWidth = MediaQuery.of(context).size.width;
+  var screenHeigth = MediaQuery.of(context).size.height;
+  var paint = Paint()
+    ..color = strokeColor
+    ..strokeWidth = 4.0
+    ..style = PaintingStyle.stroke;
 
-    var path = Path();
-    // Your code to draw the imperfect rectangle
-    path.moveTo(0, -5);
-    path.lineTo(size.width*(0.2), size.height+10);
-    path.lineTo(size.width, size.height-5);
-    path.lineTo(size.height*(0.8), -1 );
-    path.close();
-    canvas.drawPath(path, paint);
-  }
+  var path = Path();
+  // Your code to draw the imperfect rectangle
+  path.moveTo(0, -5 / screenHeigth);
+  path.lineTo(size.width * (-0.01), size.height + 1 / screenHeigth);
+  path.lineTo(size.width, size.height - 5 / screenHeigth);
+  path.lineTo(size.height * (1), -1 / screenHeigth);
+  path.close();
+  canvas.drawPath(path, paint);
+}
 
   @override
   bool shouldRepaint(ImperfectRectangleBorder oldDelegate) =>
       oldDelegate.strokeColor != strokeColor;
 }
 
-class ArtworkWithShape extends StatelessWidget {
-  final Path path;
-  final int id;
-  final ArtworkType type;
+// class ArtworkWithShape extends StatelessWidget {
+//   final Path path;
+//   final int id;
+//   final ArtworkType type;
 
-  const ArtworkWithShape({required this.path, required this.id, required this.type});
+//   const ArtworkWithShape({required this.path, required this.id, required this.type});
 
-  @override
-  Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: ShapeClipper(path: path),
-      child: QueryArtworkWidget(
-        artworkBorder: BorderRadius.zero,
-        id: id,
-        type: type,
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return ClipPath(
+//       clipper: ShapeClipper(path: path),
+//       child: QueryArtworkWidget(
+//         artworkBorder: BorderRadius.zero,
+//         id: id,
+//         type: type,
+//       ),
+//     );
+//   }
+// }
+
+
+double imperfectRectangleAspectRatio = 600;
+double imageAspectRatio = 500;
+
+double scaleFactor = calculateScaleFactor(imperfectRectangleAspectRatio, imageAspectRatio);
+                        double calculateScaleFactor(double rectAspectRatio, double imageAspectRatio) {
+                          if (rectAspectRatio > imageAspectRatio) {
+                            return 1.0;
+                          } else {
+                            return rectAspectRatio / imageAspectRatio;
+                          }
+                        }
 
 class ShapeClipper extends CustomClipper<Path> {
   final Path path;
@@ -112,8 +128,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: _CustomAppBar(),
-        bottomNavigationBar: _CustomNavBar(),
+        appBar: const _CustomAppBar(),
+        bottomNavigationBar: const _CustomNavBar(),
         body: FutureBuilder<List<SongModel>>(
           future: _audioQuery.querySongs(
             sortType: null,
@@ -128,13 +144,14 @@ class _HomeScreenState extends State<HomeScreen> {
             if(item.data!.isEmpty){
               return const Center(child: Text("No Songs Found"),);
             }
-
+              
             return ListView.builder(
               itemCount: item.data!.length,
               itemBuilder: ((context, index) {
                 return Container(
-                  margin: const EdgeInsets.only(top: 5, left: 12, right: 15),
-                  padding: const EdgeInsets.only(top: 5, bottom: 5),
+                  
+                  margin: EdgeInsets.only(top: 0.01 * MediaQuery.of(context).size.height, left:  0.01 * MediaQuery.of(context).size.width, right: 0.01 * MediaQuery.of(context).size.width),
+                  padding: EdgeInsets.only(top: 0.01 * MediaQuery.of(context).size.height, bottom: 0.02 * MediaQuery.of(context).size.height),
                   decoration:  BoxDecoration(
                     color: Colors.black,
                     border: Border.all(color: Colors.grey),
@@ -162,19 +179,40 @@ class _HomeScreenState extends State<HomeScreen> {
                           maxLines: 1,
                       ),
                       trailing: const Icon(Icons.more_vert),
-                      leading: SizedBox(
-                      width: 50,
-                      height: 50,
-                      child: CustomPaint(
-                        painter: ImperfectRectangleBorder(strokeColor: Colors.white),
-                        child: QueryArtworkWidget(//from on_audio_query package
-                          artworkBorder: BorderRadius.zero,
-                          artworkFit: BoxFit.fill,
-                          id: item.data![index].id,
-                          type: ArtworkType.AUDIO,
+
+                      //my pathetic efforts trying to shape the song artwork
+                     leading: SizedBox(
+                        width: 50,
+                        height: 50,
+                        child: Transform(
+                          transform: Matrix4.rotationZ(MediaQuery.of(context).devicePixelRatio*(-0.1))
+                            ..rotateX(-0.1 * MediaQuery.of(context).devicePixelRatio)
+                            ..rotateY(-0.3 * MediaQuery.of(context).devicePixelRatio)
+                            ..scale(scaleFactor),
+                          child: Stack(
+                            children: [
+                              QueryArtworkWidget(
+                                artworkBorder: BorderRadius.zero,
+                                id: item.data![index].id,
+                                type: ArtworkType.AUDIO,
+                              ),
+                              Positioned(
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                child: CustomPaint(
+                                  painter: ImperfectRectangleBorder(strokeColor: Colors.white, context: context,),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+
+
+
+
                     ),
 
                 );
