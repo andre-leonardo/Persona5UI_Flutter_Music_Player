@@ -44,60 +44,97 @@ class ImperfectRectangleBorder extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-  var screenWidth = MediaQuery.of(context).size.width;
-  var screenHeigth = MediaQuery.of(context).size.height;
-  var paint = Paint()
-    ..color = strokeColor
-    ..strokeWidth = 4.0
-    ..style = PaintingStyle.stroke;
+    var screenWidth = MediaQuery.of(context).size.width;
+    var screenHeigth = MediaQuery.of(context).size.height;
+    var paint = Paint()
+      ..color = strokeColor
+      ..strokeWidth = 6.0
+      ..style = PaintingStyle.stroke;
 
-  var path = Path();
-  // Your code to draw the imperfect rectangle
-  path.moveTo(0, -5 / screenHeigth);
-  path.lineTo(size.width * (-0.01), size.height + 1 / screenHeigth);
-  path.lineTo(size.width, size.height - 5 / screenHeigth);
-  path.lineTo(size.height * (1), -1 / screenHeigth);
-  path.close();
-  canvas.drawPath(path, paint);
-}
+    var path = Path();
+    // white imperfect rectangle
+    path.moveTo(0, -0.002 * screenHeigth);
+    path.lineTo(size.width * (-0.02), 0.07 * screenHeigth);
+    path.lineTo(size.width, 0.07 * screenHeigth);
+    path.lineTo(size.width * (1), -1 / screenHeigth);
+    path.close();
+    canvas.drawPath(path, paint);
+    // black imperfect rectangle
+    paint.color = Colors.black;
+    paint.strokeWidth = 6.0;
+    var borderPath = Path();
+    borderPath.moveTo(screenWidth * -0.012, -0.011 * screenHeigth);
+    borderPath.lineTo(size.width * (-0.1), 0.075 * screenHeigth);
+    borderPath.lineTo(size.width * (1.1), 0.074 * screenHeigth);
+    borderPath.lineTo(size.width * (1.05), -0.005 * screenHeigth);
+    borderPath.close();
+    canvas.drawPath(borderPath, paint);
+  }
 
   @override
-  bool shouldRepaint(ImperfectRectangleBorder oldDelegate) =>
-      oldDelegate.strokeColor != strokeColor;
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
 
-// class ArtworkWithShape extends StatelessWidget {
-//   final Path path;
-//   final int id;
-//   final ArtworkType type;
+class BackgroundPainter extends CustomPainter {
 
-//   const ArtworkWithShape({required this.path, required this.id, required this.type});
+  final Color strokeColor;
+  final BuildContext context;
+  BackgroundPainter({this.strokeColor = Colors.white, required this.context});
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint fillPaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.fill;
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return ClipPath(
-//       clipper: ShapeClipper(path: path),
-//       child: QueryArtworkWidget(
-//         artworkBorder: BorderRadius.zero,
-//         id: id,
-//         type: type,
-//       ),
-//     );
-//   }
-// }
+    Path path = Path();
+    path.moveTo(size.width / 5, size.height / 4.5);
+    path.lineTo(size.width / 5, size.height /4.5);
+    path.lineTo(size.width / 1.1, size.height * 0.19);
+    path.lineTo(size.width / 1.2, size.height / 1.3);
+    path.lineTo(size.width * 0.2, size.height / 1.3 );
+    path.close();
+
+    canvas.drawPath(path, fillPaint);
+
+    Paint borderPaint1 = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 8.0
+      ..style = PaintingStyle.stroke;
+
+    canvas.drawPath(path, borderPaint1);
+
+    Paint borderPaint2 = Paint()
+      ..color = Color(0xffff0505)
+      ..strokeWidth = 8.0
+      ..style = PaintingStyle.stroke;
+
+      Path invisibleBorder = Path();
+      invisibleBorder.moveTo(size.width / 5.3, size.height / 4.5);
+      invisibleBorder.lineTo(size.width / 5, size.height /7);
+      invisibleBorder.lineTo(size.width / 1.059, size.height * 0.12);
+      invisibleBorder.lineTo(size.width / 1.19, size.height / 1.22);
+      invisibleBorder.lineTo(size.width * 0.192, size.height / 1.2 );
+      invisibleBorder.close();
+
+    canvas.drawPath(invisibleBorder, borderPaint2);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
 
 
 double imperfectRectangleAspectRatio = 600;
 double imageAspectRatio = 500;
 
 double scaleFactor = calculateScaleFactor(imperfectRectangleAspectRatio, imageAspectRatio);
-                        double calculateScaleFactor(double rectAspectRatio, double imageAspectRatio) {
-                          if (rectAspectRatio > imageAspectRatio) {
-                            return 1.0;
-                          } else {
-                            return rectAspectRatio / imageAspectRatio;
-                          }
-                        }
+  double calculateScaleFactor(double rectAspectRatio, double imageAspectRatio) {
+    if (rectAspectRatio > imageAspectRatio) {
+      return 1.0;
+    } else {
+      return rectAspectRatio / imageAspectRatio;
+    }
+  }
 
 class ShapeClipper extends CustomClipper<Path> {
   final Path path;
@@ -148,21 +185,21 @@ class _HomeScreenState extends State<HomeScreen> {
             return ListView.builder(
               itemCount: item.data!.length,
               itemBuilder: ((context, index) {
-                return Container(
-                  
-                  margin: EdgeInsets.only(top: 0.01 * MediaQuery.of(context).size.height, left:  0.01 * MediaQuery.of(context).size.width, right: 0.01 * MediaQuery.of(context).size.width),
-                  padding: EdgeInsets.only(top: 0.01 * MediaQuery.of(context).size.height, bottom: 0.02 * MediaQuery.of(context).size.height),
-                  decoration:  BoxDecoration(
-                    color: Colors.black,
-                    border: Border.all(color: Colors.grey),
-                  ),
+                return CustomPaint(
+                  painter: BackgroundPainter(strokeColor: Colors.white, context: context),
+                  child: Container(
+                    padding: EdgeInsets.only(top: 0.01 * MediaQuery.of(context).size.height, bottom: 0.02 * MediaQuery.of(context).size.height),
+                    decoration:  BoxDecoration(
+                      color: Colors.transparent,
+                      border: Border.all(color: Colors.transparent),
+                    ),
 
                   child: ListTile(
                       title: Text(item.data![index].title,
                           style: const TextStyle(
                               color: Color(0xffffffff),
                               fontFamily: 'Arsenal',
-                              fontSize: 18,
+                              fontSize: 17,
                               fontWeight: FontWeight.w700
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -185,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         width: 50,
                         height: 50,
                         child: Transform(
-                          transform: Matrix4.rotationZ(MediaQuery.of(context).devicePixelRatio*(-0.1))
+                          transform: Matrix4.rotationZ(MediaQuery.of(context).devicePixelRatio*(-0.01))
                             ..rotateX(-0.1 * MediaQuery.of(context).devicePixelRatio)
                             ..rotateY(-0.3 * MediaQuery.of(context).devicePixelRatio)
                             ..scale(scaleFactor),
@@ -214,7 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
                     ),
-
+                  )
                 );
               }),
             );
