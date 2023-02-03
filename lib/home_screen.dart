@@ -48,27 +48,29 @@ class ImperfectRectangleBorder extends CustomPainter {
     var screenHeigth = MediaQuery.of(context).size.height;
     var paint = Paint()
       ..color = strokeColor
-      ..strokeWidth = 6.0
+      ..strokeWidth = 9.5
       ..style = PaintingStyle.stroke;
 
     var path = Path();
+    // black imperfect rectangle
+    paint.color = Colors.black;
+    var borderPath = Path();
+    borderPath.moveTo(screenWidth * -0.021, -0.008 * screenHeigth);
+    borderPath.lineTo(size.width * (-0.1), 0.07 * screenHeigth);
+    borderPath.lineTo(size.width * (1), 0.07 * screenHeigth);
+    borderPath.lineTo(size.width * (1.0), -0.005 * screenHeigth);
+    borderPath.close();
+    canvas.drawPath(borderPath, paint);
     // white imperfect rectangle
+    paint.color = Colors.white;
+    paint.strokeWidth = 5;
     path.moveTo(0, -0.002 * screenHeigth);
     path.lineTo(size.width * (-0.02), 0.07 * screenHeigth);
     path.lineTo(size.width, 0.07 * screenHeigth);
     path.lineTo(size.width * (1), -1 / screenHeigth);
     path.close();
     canvas.drawPath(path, paint);
-    // black imperfect rectangle
-    paint.color = Colors.black;
-    paint.strokeWidth = 6.0;
-    var borderPath = Path();
-    borderPath.moveTo(screenWidth * -0.012, -0.011 * screenHeigth);
-    borderPath.lineTo(size.width * (-0.1), 0.075 * screenHeigth);
-    borderPath.lineTo(size.width * (1.1), 0.074 * screenHeigth);
-    borderPath.lineTo(size.width * (1.05), -0.005 * screenHeigth);
-    borderPath.close();
-    canvas.drawPath(borderPath, paint);
+    
   }
 
   @override
@@ -87,18 +89,18 @@ class BackgroundPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     Path path = Path();
-    path.moveTo(size.width / 5, size.height / 4.5);
-    path.lineTo(size.width / 5, size.height /4.5);
-    path.lineTo(size.width / 1.1, size.height * 0.19);
-    path.lineTo(size.width / 1.2, size.height / 1.3);
-    path.lineTo(size.width * 0.2, size.height / 1.3 );
+    path.moveTo(size.width / 4.6, size.height / 4);
+    path.lineTo(size.width / 5, size.height /4);
+    path.lineTo(size.width / 1.12, size.height * 0.19);
+    path.lineTo(size.width / 1.2, size.height / 1.2);
+    path.lineTo(size.width * 0.185, size.height / 1.3 );
     path.close();
 
     canvas.drawPath(path, fillPaint);
 
     Paint borderPaint1 = Paint()
       ..color = Colors.white
-      ..strokeWidth = 8.0
+      ..strokeWidth = 10.0
       ..style = PaintingStyle.stroke;
 
     canvas.drawPath(path, borderPaint1);
@@ -109,11 +111,11 @@ class BackgroundPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
       Path invisibleBorder = Path();
-      invisibleBorder.moveTo(size.width / 5.3, size.height / 4.5);
-      invisibleBorder.lineTo(size.width / 5, size.height /7);
-      invisibleBorder.lineTo(size.width / 1.059, size.height * 0.12);
-      invisibleBorder.lineTo(size.width / 1.19, size.height / 1.22);
-      invisibleBorder.lineTo(size.width * 0.192, size.height / 1.2 );
+      invisibleBorder.moveTo(size.width / 5, size.height / 4.5);
+      invisibleBorder.lineTo(size.width / 5, size.height /4.7);
+      invisibleBorder.lineTo(size.width / 1.08, size.height * 0.16);
+      invisibleBorder.lineTo(size.width / 1.19, size.height / 1.18);
+      invisibleBorder.lineTo(size.width * 0.175, size.height / 1.25 );
       invisibleBorder.close();
 
     canvas.drawPath(invisibleBorder, borderPaint2);
@@ -188,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 return CustomPaint(
                   painter: BackgroundPainter(strokeColor: Colors.white, context: context),
                   child: Container(
-                    padding: EdgeInsets.only(top: 0.01 * MediaQuery.of(context).size.height, bottom: 0.02 * MediaQuery.of(context).size.height),
+                    padding: EdgeInsets.only(top: 0.019 * MediaQuery.of(context).size.height, bottom: 0.02 * MediaQuery.of(context).size.height),
                     decoration:  BoxDecoration(
                       color: Colors.transparent,
                       border: Border.all(color: Colors.transparent),
