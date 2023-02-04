@@ -1,3 +1,4 @@
+import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -5,6 +6,7 @@ import 'package:phantom_tunes/search_screen.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:convert';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 
 
@@ -156,15 +158,295 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final OnAudioQuery _audioQuery = OnAudioQuery();
 
+  final AudioPlayer _player = AudioPlayer();
+
+
+  List<SongModel> songs = [];
+  String currentSongTitle = '';
+  int currentIndex = 0;
+
+  bool isPlayerVisible = false;
+
+  void changePlayerVisibility() {
+    setState(() {
+      isPlayerVisible = !isPlayerVisible;
+    });
+  }
+
+  Stream<DurationState> get _durationStateStream =>
+    Rx.combineLatest2<Duration, Duration?, DurationState>(
+      _player.positionStream, _player.durationStream, (position, duration) => DurationState(
+        position: position, total: duration?? Duration.zero
+      )
+    );
+
   //request permission from initStateMethod
   @override
   void initState() {
     super.initState();
     requestStoragePermission();
+
+
+
+    _player.currentIndexStream.listen((index) {
+      if(index != null){
+        _updateCurrentPlayingSongDetails(index);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    if(isPlayerVisible){
+      return Scaffold(
+        backgroundColor: Color(0xffff0505),
+        body: SingleChildScrollView(
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.only(top: 56.0, right: 20.0, left: 20.0),
+            decoration: BoxDecoration(color: Colors.black), 
+            child: Column(
+              children: <Widget>[
+                //exit and title
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Flexible(child: 
+                    InkWell(
+                      onTap: changePlayerVisibility,
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        child: Image.asset('assets/icons/arrow.png'),
+                      ),
+                    )
+                    ),
+                    Flexible(
+                      child: Text(
+                        currentSongTitle,
+                        style: const TextStyle(
+                          fontSize: 18,
+                        )
+                      ),
+                      flex: 5,
+                      )
+                  ],
+                ),
+
+                //artwork
+                Container(
+                  width: 300,
+                  height: 300,
+                  child: QueryArtworkWidget(
+                    artworkBorder: BorderRadius.zero,
+                    id: songs[currentIndex].id, 
+                    type: ArtworkType.AUDIO),
+                ),
+
+                Column(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.zero,
+                      margin: const EdgeInsets.only(bottom: 4),
+
+
+                      child: StreamBuilder<DurationState>(
+                        stream: _durationStateStream,
+                        builder: (context, snapshot) {
+                          final durationState = snapshot.data;
+                          final progress = durationState?.position?? Duration.zero;
+                          final total = durationState?.total ?? Duration.zero;
+
+                          return ProgressBar(
+                            progress: progress, 
+                            total: total,
+                            barHeight: 20,
+                            baseBarColor: Colors.white,
+                            progressBarColor: Colors.blue,
+                            thumbColor: Colors.yellow,
+                            timeLabelTextStyle: const TextStyle(
+                              fontSize: 0,
+                            ),
+                            onSeek: (duration){
+                              _player.seek(duration);
+                            },
+                            );
+                        }
+                        ),
+                      ),
+
+
+                      StreamBuilder<DurationState>(
+                        stream: _durationStateStream,
+                        builder: (context, snapshot) {
+                          final durationState = snapshot.data;
+                          final progress = durationState?.position?? Duration.zero;
+                          final total = durationState?.total ?? Duration.zero;
+
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  progress.toString().split(".")[0],
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                  ),
+                                )
+                              ),
+                              Flexible(
+                                child: Text(
+                                  total.toString().split(".")[0],
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                  ),
+                                )
+                              ),
+                            ],
+                          );
+                        }),
+                    
+                  ],
+                ),
+
+                Container(
+                  margin: const EdgeInsets.only(top: 20, bottom: 20),
+                  child: Row(
+                    mainAxisAlignment:  MainAxisAlignment.center,
+                    mainAxisSize:  MainAxisSize.max,
+                    children: [
+                      //skip to previous
+                      Flexible(
+                        child: InkWell(
+                          onTap: (){
+                            if(_player.hasPrevious){
+                              _player.seekToPrevious();
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(10.0),
+                            child: const Icon(Icons.skip_previous, color: Colors.white70,),
+                          ),
+                        ),
+                      ),
+
+                      //play pause
+                      Flexible(
+                        child: InkWell(
+                          onTap: (){
+                            if(_player.playing){
+                              _player.pause();
+                            }else{
+                              if(_player.currentIndex != null){
+                                _player.play();
+                              }
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(20.0),
+                            margin: const EdgeInsets.only(right: 20.0, left: 20.0),
+                            child: StreamBuilder<bool>(
+                              stream: _player.playingStream,
+                              builder: (context, snapshot){
+                                bool? playingState = snapshot.data;
+                                if(playingState != null && playingState){
+                                  return const Icon(Icons.pause, size: 30, color: Colors.white70,);
+                                }
+                                return const Icon(Icons.play_arrow, size: 30, color: Colors.white70,);
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      //skip to next
+                      Flexible(
+                        child: InkWell(
+                          onTap: (){
+                            if(_player.hasNext){
+                              _player.seekToNext();
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(10.0),
+                            child: const Icon(Icons.skip_next, color: Colors.white70,),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+
+                //go to playlist, shuffle , repeat all and repeat one control buttons
+                Container(
+                  margin: const EdgeInsets.only(top: 20, bottom: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      //go to playlist btn
+                      Flexible(
+                        child: InkWell(
+                          onTap: (){changePlayerVisibility();},
+                          child: Container(
+                            padding: const EdgeInsets.all(10.0),
+                            child: const Icon(Icons.list_alt, color: Colors.white70,),
+                          ),
+                        ),
+                      ),
+
+                      //shuffle playlist
+                      Flexible(
+                        child: InkWell(
+                          onTap: (){
+                            _player.setShuffleModeEnabled(true);
+                            toast(context, "Shuffling enabled");
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(10.0),
+                            margin:  const EdgeInsets.only(right: 30.0, left: 30.0),
+                            child: const Icon(Icons.shuffle, color: Colors.white70,),
+                          ),
+                        ),
+                      ),
+
+                      //repeat mode
+                      Flexible(
+                        child: InkWell(
+                          onTap: (){
+                            _player.loopMode == LoopMode.one ? _player.setLoopMode(LoopMode.all) : _player.setLoopMode(LoopMode.one);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(10.0),
+                            child: StreamBuilder<LoopMode>(
+                              stream: _player.loopModeStream,
+                              builder: (context, snapshot){
+                                final loopMode = snapshot.data;
+                                if(LoopMode.one == loopMode){
+                                  return const Icon(Icons.repeat_one, color: Colors.white,);
+                                }
+                                return const Icon(Icons.repeat, color: Colors.white,);
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                
+                
+              ],
+            ),
+            ),
+          ),
+      );
+    }
     return Scaffold(
         backgroundColor: Colors.transparent,
         appBar: const _CustomAppBar(),
@@ -183,6 +465,9 @@ class _HomeScreenState extends State<HomeScreen> {
             if(item.data!.isEmpty){
               return const Center(child: Text("No Songs Found"),);
             }
+
+            songs.clear();
+            songs = item.data!;
               
             return ListView.builder(
               itemCount: item.data!.length,
@@ -248,7 +533,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-
+                    onTap: () async {
+                      changePlayerVisibility();
+                      //String? uri = item.data![index].uri;
+                      // await _player.setAudioSource(AudioSource.uri(Uri.parse(uri!)));
+                      
+                      await _player.setAudioSource(
+                        createPlaylist(item.data!),
+                        initialIndex: index
+                      );
+                      await _player.play();
+                    },
 
 
 
@@ -277,8 +572,53 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() { });
     }
   }
+  
+  ConcatenatingAudioSource createPlaylist(List<SongModel> songs) {
+    List<AudioSource> sources = [];
+    for (var song in songs){
+      sources.add(AudioSource.uri(Uri.parse(song.uri!)));
+    }
+
+    return ConcatenatingAudioSource(children: sources);
+  }
+  
+  void _updateCurrentPlayingSongDetails(int index) {
+    setState(() {
+      if(songs.isNotEmpty){
+        currentSongTitle = songs[index].title;
+        currentIndex = index;
+      }
+    });
+  }
+  
+  getDecoration(BoxShape shape, Offset offset, double blurRadius, double spreadRadius) {
+    return BoxDecoration(
+      color: Colors.white,
+      shape: shape,
+      boxShadow: [
+        BoxShadow(
+          offset: -offset,
+          color: Colors.black,
+          blurRadius: blurRadius,
+          spreadRadius: spreadRadius
+        ),
+        BoxShadow(
+          offset: offset,
+          color: Colors.blue,
+          blurRadius: blurRadius,
+          spreadRadius: spreadRadius
+        )
+      ]
+    );
+  }
 }
 
+class DurationState{
+  DurationState({
+      this.position = Duration.zero, this.total = Duration.zero
+  });
+  Duration position, total;
+}
 
 
 class _CustomNavBar extends StatelessWidget {
