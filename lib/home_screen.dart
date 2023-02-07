@@ -158,6 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final OnAudioQuery _audioQuery = OnAudioQuery();
 
+  var check = 0;
   final AudioPlayer _player = AudioPlayer();
 
 
@@ -204,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.only(top: 56.0, right: 20.0, left: 20.0),
-            decoration: BoxDecoration(color: Colors.black), 
+            decoration: BoxDecoration(color: Color(0xffff0505)), 
             child: Column(
               children: <Widget>[
                 //exit and title
@@ -226,8 +227,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         currentSongTitle,
                         style: const TextStyle(
                           fontSize: 18,
-                        )
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
+                      
                       flex: 5,
                       )
                   ],
@@ -328,7 +332,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                           child: Container(
                             padding: const EdgeInsets.all(10.0),
-                            child: const Icon(Icons.skip_previous, color: Colors.white70,),
+                            child: Image.asset("assets/icons/previous.png", width: 30, height: 30,)
                           ),
                         ),
                       ),
@@ -346,16 +350,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             }
                           },
                           child: Container(
-                            padding: const EdgeInsets.all(20.0),
-                            margin: const EdgeInsets.only(right: 20.0, left: 20.0),
+                            padding: const EdgeInsets.all(15.0),
+                            margin: const EdgeInsets.only(right: 10.0, left: 10.0),
                             child: StreamBuilder<bool>(
                               stream: _player.playingStream,
                               builder: (context, snapshot){
                                 bool? playingState = snapshot.data;
+                                //play/pause icons
                                 if(playingState != null && playingState){
-                                  return const Icon(Icons.pause, size: 30, color: Colors.white70,);
+                                  return Image.asset("assets/icons/pause.png", width: 50, height: 50,);
                                 }
-                                return const Icon(Icons.play_arrow, size: 30, color: Colors.white70,);
+                                return Image.asset("assets/icons/play.png", width: 50, height: 50,);
                               },
                             ),
                           ),
@@ -372,7 +377,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                           child: Container(
                             padding: const EdgeInsets.all(10.0),
-                            child: const Icon(Icons.skip_next, color: Colors.white70,),
+                            child: Image.asset("assets/icons/next.png", width: 30, height: 30,)
                           ),
                         ),
                       ),
@@ -394,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTap: (){changePlayerVisibility();},
                           child: Container(
                             padding: const EdgeInsets.all(10.0),
-                            child: const Icon(Icons.list_alt, color: Colors.white70,),
+                            child: Image.asset("assets/icons/list.png", width: 30, height: 30,)
                           ),
                         ),
                       ),
@@ -402,14 +407,25 @@ class _HomeScreenState extends State<HomeScreen> {
                       //shuffle playlist
                       Flexible(
                         child: InkWell(
+                          
                           onTap: (){
-                            _player.setShuffleModeEnabled(true);
-                            toast(context, "Shuffling enabled");
+                            if(check == 1)
+                            {
+                              _player.setShuffleModeEnabled(false);
+                              check = 0;
+                              toast(context, "Shuffling disabled");
+                            }
+                            else{
+                              _player.setShuffleModeEnabled(true);
+                              check = 1;
+                              toast(context, "Shuffling enabled");
+                            }
+                            
                           },
                           child: Container(
                             padding: const EdgeInsets.all(10.0),
                             margin:  const EdgeInsets.only(right: 30.0, left: 30.0),
-                            child: const Icon(Icons.shuffle, color: Colors.white70,),
+                            child: Image.asset("assets/icons/shuffletrue.png", width: 30, height: 30,)
                           ),
                         ),
                       ),
@@ -427,9 +443,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               builder: (context, snapshot){
                                 final loopMode = snapshot.data;
                                 if(LoopMode.one == loopMode){
-                                  return const Icon(Icons.repeat_one, color: Colors.white,);
+                                  return Image.asset("assets/icons/loop1.png", width: 30, height: 30,);
                                 }
-                                return const Icon(Icons.repeat, color: Colors.white,);
+                                return Image.asset("assets/icons/loop.png", width: 30, height: 30,);
                               },
                             ),
                           ),
