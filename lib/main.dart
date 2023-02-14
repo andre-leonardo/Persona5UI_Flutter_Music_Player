@@ -3,15 +3,17 @@ import 'package:phantom_tunes/home_screen.dart';
 import 'package:phantom_tunes/playlist_screen.dart';
 import 'package:phantom_tunes/song_screen.dart';
 import 'package:phantom_tunes/search_screen.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:screens/screens.dart';
-import 'package:flutter/src/rendering/box.dart';
+import 'package:just_audio_background/just_audio_background.dart';
+
 import 'package:get/get.dart';
 
-void main(){
-  
-    runApp(const MyApp());
-  
+Future<void> main() async {
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
+    androidNotificationChannelName: 'Audio playback',
+    androidNotificationOngoing: true,
+  );
+  runApp(MyApp());
 }
 
 

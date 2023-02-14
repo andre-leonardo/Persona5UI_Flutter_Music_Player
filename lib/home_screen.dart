@@ -10,6 +10,8 @@ import 'package:rxdart/rxdart.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:audio_service/audio_service.dart';
+
 
 
 
@@ -217,7 +219,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     requestStoragePermission();
-
 
 
     _player.currentIndexStream.listen((index) {
@@ -645,7 +646,20 @@ class _HomeScreenState extends State<HomeScreen> {
   ConcatenatingAudioSource createPlaylist(List<SongModel> songs) {
     List<AudioSource> sources = [];
     for (var song in songs){
-      sources.add(AudioSource.uri(Uri.parse(song.uri!)));
+      sources.add(AudioSource.uri
+        (
+          Uri.parse(song.uri!),
+          tag: MediaItem(
+            // Specify a unique ID for each media item:
+            id: '${song.id}',
+            // Metadata to display in the notification:
+            album: song.album,
+            title: song.title,
+            
+            // artUri: Uri.parse(song.album),
+          ),
+        )
+      );
     }
 
     return ConcatenatingAudioSource(children: sources);
