@@ -8,6 +8,8 @@ import 'dart:convert';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:on_audio_query/on_audio_query.dart';
+import 'package:flutter_styled_toast/flutter_styled_toast.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
 
 
 
@@ -15,13 +17,15 @@ void toast(BuildContext context, String message) {
   Fluttertoast.showToast(
       msg: message,
       toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
+      gravity: ToastGravity.CENTER,
       timeInSecForIosWeb: 1,
       backgroundColor: Colors.grey,
       textColor: Colors.white,
       fontSize: 16.0
   );
 }
+
+
 
 
 
@@ -34,6 +38,33 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+
+
+class ArtBorderPainter extends CustomPainter {
+  final Color strokeColor;
+  final BuildContext context;
+  ArtBorderPainter({this.strokeColor = Colors.white, required this.context});
+  @override
+  void paint(Canvas canvas, Size size,) {
+    final paint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 50;
+
+
+    var path = Path();
+    paint.color = Colors.black;
+    path.moveTo(size.width * 0.05, 0.06 * size.height);
+    path.lineTo(size.width * (0.06), 0.94 * size.height);
+    path.lineTo(size.width * (0.98), 0.95 * size.height);
+    path.lineTo(size.width * (1.01), 0.015 * size.height);
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
 
 
 
@@ -223,6 +254,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                     ),
                     Flexible(
+                      flex: 5,
                       child: Text(
                         currentSongTitle,
                         style: const TextStyle(
@@ -231,27 +263,28 @@ class _HomeScreenState extends State<HomeScreen> {
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
-                      
-                      flex: 5,
                       )
                   ],
                 ),
 
                 //artwork
                 Container(
-                  width: 300,
-                  height: 300,
-                  child: QueryArtworkWidget(
-                    artworkBorder: BorderRadius.zero,
-                    id: songs[currentIndex].id, 
-                    type: ArtworkType.AUDIO),
+                  width: MediaQuery.of(context).size.width * 0.8,
+                  height: MediaQuery.of(context).size.height * 0.4,
+                  child: CustomPaint(
+                    painter: ArtBorderPainter(strokeColor: Colors.black, context: context,),
+                    child: QueryArtworkWidget(
+                      artworkBorder: BorderRadius.zero,
+                      id: songs[currentIndex].id, 
+                      type: ArtworkType.AUDIO),
+                  ),
                 ),
 
                 Column(
                   children: [
                     Container(
                       padding: EdgeInsets.zero,
-                      margin: const EdgeInsets.only(bottom: 4),
+                      margin: const EdgeInsets.only( top: 10),
 
 
                       child: StreamBuilder<DurationState>(
@@ -260,21 +293,31 @@ class _HomeScreenState extends State<HomeScreen> {
                           final durationState = snapshot.data;
                           final progress = durationState?.position?? Duration.zero;
                           final total = durationState?.total ?? Duration.zero;
-
-                          return ProgressBar(
-                            progress: progress, 
-                            total: total,
-                            barHeight: 20,
-                            baseBarColor: Colors.white,
-                            progressBarColor: Colors.blue,
-                            thumbColor: Colors.yellow,
-                            timeLabelTextStyle: const TextStyle(
-                              fontSize: 0,
+                          final height = MediaQuery.of(context).size.height;
+                          final width = MediaQuery.of(context).size.width;
+                          return Transform(
+                            transform: Matrix4.skewY(height * 5.052189)..scale(width / 350, 0.9),
+                            child: Transform.rotate(
+                              angle: 25 / 4,
+                              child: ProgressBar(
+                                progress: progress, 
+                                total: total,
+                                barHeight: 15,
+                                barCapShape: BarCapShape.square,
+                                baseBarColor: Colors.black,
+                                progressBarColor: Colors.white,
+                                thumbColor: Colors.white,
+                                thumbRadius: 0,
+                                timeLabelTextStyle: const TextStyle(
+                                  fontSize: 0,
+                                ),
+                                onSeek: (duration){
+                                  _player.seek(duration);
+                                },
+                              ),
                             ),
-                            onSeek: (duration){
-                              _player.seek(duration);
-                            },
-                            );
+                          );
+
                         }
                         ),
                       ),
@@ -425,7 +468,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(10.0),
                             margin:  const EdgeInsets.only(right: 30.0, left: 30.0),
-                            child: Image.asset("assets/icons/shuffletrue.png", width: 30, height: 30,)
+                            child: StreamBuilder<bool>(
+                              stream: _player.shuffleModeEnabledStream,
+                              builder: (context, snapshot){
+                                bool? shuffleModeEnabledStream = snapshot.data;
+                                //play/pause icons
+                                if(shuffleModeEnabledStream != null && shuffleModeEnabledStream){
+                                  return Image.asset("assets/icons/shuffletrue.png", width: 30, height: 30,);
+                                }
+                                return Image.asset("assets/icons/shufflefalse.png", width: 30, height: 30,);
+                              },
+                            ),
                           ),
                         ),
                       ),
