@@ -1,15 +1,11 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:phantom_tunes/search_screen.dart';
 import 'package:just_audio/just_audio.dart';
-import 'dart:convert';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:on_audio_query/on_audio_query.dart';
-import 'package:flutter_styled_toast/flutter_styled_toast.dart';
-import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:audio_service/audio_service.dart';
 
 
@@ -100,9 +96,9 @@ class ImperfectRectangleBorder extends CustomPainter {
     paint.color = Colors.white;
     paint.strokeWidth = 5;
     path.moveTo(0, -0.002 * screenHeigth);
-    path.lineTo(size.width * (-0.02), 0.07 * screenHeigth);
-    path.lineTo(size.width, 0.07 * screenHeigth);
-    path.lineTo(size.width * (1), -1 / screenHeigth);
+    path.lineTo(size.width * (-0.05), 0.067 * screenHeigth);
+    path.lineTo(size.width * (0.96), 0.065 * screenHeigth);
+    path.lineTo(size.width * (0.96), -1 / screenHeigth);
     path.close();
     canvas.drawPath(path, paint);
     
@@ -200,10 +196,22 @@ class _HomeScreenState extends State<HomeScreen> {
   int currentIndex = 0;
 
   bool isPlayerVisible = false;
+  
+  
 
   void changePlayerVisibility() {
     setState(() {
       isPlayerVisible = !isPlayerVisible;
+    });
+  }
+
+  bool _showSecondBody = false;
+
+  
+  int _currentIndex = 0;
+    void _onItemTapped(int index) {
+    setState(() {
+      _currentIndex = index;
     });
   }
 
@@ -517,11 +525,66 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
       );
     }
+    
     return Scaffold(
         backgroundColor: Colors.transparent,
         appBar: const _CustomAppBar(),
-        bottomNavigationBar: const _CustomNavBar(),
-        body: FutureBuilder<List<SongModel>>(
+        bottomNavigationBar:  BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: const Color(0xffff0505),
+          unselectedItemColor: Colors.white,
+          selectedItemColor: Colors.white,
+          selectedLabelStyle: const TextStyle(fontFamily: 'Persona', fontSize: 10),
+          unselectedLabelStyle: const TextStyle(fontFamily: 'Persona', fontSize: 10),
+          onTap: _onItemTapped,
+          items: [
+          BottomNavigationBarItem(
+            icon: GestureDetector(
+            onTap: () {
+              _onItemTapped(0);
+            },
+            child: Image.asset("assets/icons/home.png", height: 50),
+          ),
+            
+            label: "Songs",
+          ),
+          BottomNavigationBarItem(
+          icon: GestureDetector(
+            onTap: () {
+              _onItemTapped(1);
+            },
+            child: Image.asset("assets/icons/playlists.png", height: 50),
+          ),
+          label: "Playlists",
+        ),
+          BottomNavigationBarItem(
+            icon: GestureDetector(
+            onTap: () {
+              _onItemTapped(2);
+            },
+            child: Image.asset("assets/icons/favorite.png", height: 50),
+          ),
+            label: "Favorites",
+          ),
+          
+          
+          
+        ]),
+      body:  _bodySelector(_currentIndex)
+          
+    );
+    
+  }
+
+  Widget _bodySelector(_currentIndex) {
+    switch(_currentIndex){
+      case 1: return _playlist();
+    }
+    return _home();
+  }
+
+  Widget _home() {
+    return FutureBuilder<List<SongModel>>(
           future: _audioQuery.querySongs(
             sortType: null,
             orderType: OrderType.ASC_OR_SMALLER,
@@ -538,7 +601,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             songs.clear();
             songs = item.data!;
-              
+            item.data!.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));  
             return ListView.builder(
               itemCount: item.data!.length,
               itemBuilder: ((context, index) {
@@ -550,7 +613,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.transparent,
                       border: Border.all(color: Colors.transparent),
                     ),
-
+                  
                   child: ListTile(
                       title: Text(item.data![index].title,
                           style: const TextStyle(
@@ -572,12 +635,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                       ),
-                      trailing: const Icon(Icons.more_vert),
+                      trailing: Image.asset("assets/icons/more.png", height: 30,), 
 
                       //my pathetic efforts trying to shape the song artwork
                      leading: SizedBox(
-                        width: 50,
-                        height: 50,
+                        width: 0.15 * MediaQuery.of(context).size.width,
+                        height: 0.1 * MediaQuery.of(context).size.height,
                         child: Transform(
                           transform: Matrix4.rotationZ(MediaQuery.of(context).devicePixelRatio*(-0.01))
                             ..rotateX(-0.1 * MediaQuery.of(context).devicePixelRatio)
@@ -623,10 +686,15 @@ class _HomeScreenState extends State<HomeScreen> {
               }),
             );
           },
-        ),
-          
-      );
-    
+        );
+  }
+
+  Widget _playlist() {
+    return Container(
+      child: Center(
+        child: Text("Body 2"),
+      ),
+    );
   }
   
   
@@ -703,43 +771,6 @@ class DurationState{
   Duration position, total;
 }
 
-
-class _CustomNavBar extends StatelessWidget {
-  const _CustomNavBar({
-    Key? key,
-  }) : super(key: key);
-
-  
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: const Color(0xffff0505),
-      unselectedItemColor: Colors.white,
-      selectedItemColor: Colors.white,
-      selectedLabelStyle: const TextStyle(fontFamily: 'Persona', fontSize: 10),
-      unselectedLabelStyle: const TextStyle(fontFamily: 'Persona', fontSize: 10),
-      items: [
-      BottomNavigationBarItem(
-        icon: Image.asset("assets/icons/home.png", height: 50), 
-        
-        label: "Songs",
-      ),
-      BottomNavigationBarItem(
-        icon: Image.asset("assets/icons/playlists.png", height: 50),
-        label: "Playlists",
-      ),
-      BottomNavigationBarItem(
-        icon: Image.asset("assets/icons/favorite.png", height: 50), 
-        label: "Favorites",
-      ),
-      
-      
-      
-    ]);
-  }
-}
 
 class _CustomAppBar extends StatelessWidget with PreferredSizeWidget {
   const _CustomAppBar({
