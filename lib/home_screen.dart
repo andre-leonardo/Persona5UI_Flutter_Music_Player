@@ -1,13 +1,14 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 import 'package:phantom_tunes/search_screen.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:audio_service/audio_service.dart';
-
+import 'package:phantom_tunes/main.dart';
 
 
 
@@ -578,7 +579,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _bodySelector(_currentIndex) {
     switch(_currentIndex){
-      case 1: return _playlist();
+      case 1: return _playlist(context);
     }
     return _home();
   }
@@ -689,10 +690,27 @@ class _HomeScreenState extends State<HomeScreen> {
         );
   }
 
-  Widget _playlist() {
-    return Container(
-      child: Center(
-        child: Text("Body 2"),
+
+
+
+  Widget _playlist(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        showToast('ready to create playlist');
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.black, width: 5)
+        ),
+      child: Row(children: const [
+        Flexible(
+          child: Icon(Icons.add)
+        ),
+        Flexible(
+          child: Text('Create new playlist'),
+        )
+      ]),
       ),
     );
   }

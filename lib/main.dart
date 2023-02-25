@@ -5,8 +5,10 @@ import 'package:phantom_tunes/song_screen.dart';
 import 'package:phantom_tunes/search_screen.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:get/get.dart';
+import 'package:hive_flutter/adapters.dart';
 
 Future<void> main() async {
+  await Hive.initFlutter();
   await JustAudioBackground.init(
     androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
     androidNotificationChannelName: 'Phantom Tunes',

@@ -52,6 +52,8 @@ dependencies:
   flutter_file_manager: ^0.2.0
   animated_text_kit: ^4.2.2
   just_audio_background: ^0.0.1-beta.9
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
   
 dev_dependencies:
   flutter_test:
