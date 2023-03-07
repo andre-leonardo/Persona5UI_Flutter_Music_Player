@@ -404,6 +404,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: InkWell(
                           onTap: (){
                             changePlayingState();
+                            //aaa
                             if(_player.playing){
                               _player.pause();
                             }else{
