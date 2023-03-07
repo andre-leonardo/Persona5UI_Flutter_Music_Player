@@ -9,7 +9,7 @@
    <application
         android:label="Phantom Tunes"
         android:name="${applicationName}"
-        android:icon="@mipmap/music_not">
+        android:icon="@mipmap/ic_launcher">
         <activity
             android:name="com.ryanheise.audioservice.AudioServiceActivity"
             android:launchMode="singleTop"

@@ -195,14 +195,23 @@ class _HomeScreenState extends State<HomeScreen> {
   List<SongModel> songs = [];
   String currentSongTitle = '';
   int currentIndex = 0;
+  int nowPlaying = 0;
 
   bool isPlayerVisible = false;
+  bool isItPlaying = false;
   
   
 
   void changePlayerVisibility() {
     setState(() {
       isPlayerVisible = !isPlayerVisible;
+    });
+  }
+
+  void changePlayingState()
+  {
+    setState(() {
+      isItPlaying = !isItPlaying;
     });
   }
 
@@ -394,6 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Flexible(
                         child: InkWell(
                           onTap: (){
+                            changePlayingState();
                             if(_player.playing){
                               _player.pause();
                             }else{
@@ -667,17 +677,32 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                    onTap: () async {
-                      changePlayerVisibility();
-                      //String? uri = item.data![index].uri;
-                      // await _player.setAudioSource(AudioSource.uri(Uri.parse(uri!)));
-                      
-                      await _player.setAudioSource(
-                        createPlaylist(item.data!),
-                        initialIndex: index
-                      );
-                      await _player.play();
-                    },
+                   onTap: () async {
+                      if (!isItPlaying) {
+                        // hide the player and stop the audio
+                        await _player.setAudioSource(
+                            createPlaylist(item.data!),
+                            initialIndex: index);
+                            nowPlaying = index;
+                            print(index);
+                        changePlayingState();
+                        await _player.play();
+                        changePlayerVisibility();
+                      } else {
+                        // show the player and start the audio only if it's not already playing
+                        changePlayerVisibility();
+                        if (isItPlaying) {
+                          if(index != nowPlaying)
+                          {
+                            await _player.setAudioSource(
+                            createPlaylist(item.data!),
+                            initialIndex: index);
+                            nowPlaying = index;
+                            await _player.play();
+                          }
+                        }
+                      }
+                    }
 
 
 
@@ -693,28 +718,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
 
-  Widget _playlist(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        showToast('ready to create playlist');
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.black, width: 5)
-        ),
+ Widget _playlist(BuildContext context) {
+  void addSongToPlaylist() {
+  // TODO: Add logic to add song to playlist
+  toast(context, 'song added to playlist');
+}
+
+  return InkWell(
+    onTap: () {
+      addSongToPlaylist();
+    },
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black, width: 5)
+      ),
       child: Row(children: const [
         Flexible(
           child: Icon(Icons.add)
         ),
         Flexible(
-          child: Text('Create new playlist'),
+          child: Text('Add song to playlist'),
         )
       ]),
-      ),
-    );
-  }
-  
+    ),
+  );
+}
   
   void requestStoragePermission() async {
     //only if the platform is not web, coz web have no permissions
