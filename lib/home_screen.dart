@@ -404,7 +404,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: InkWell(
                           onTap: (){
                             changePlayingState();
-                            //aaa
                             if(_player.playing){
                               _player.pause();
                             }else{
@@ -820,7 +819,7 @@ class DurationState{
 }
 
 
-class _CustomAppBar extends StatelessWidget with PreferredSizeWidget {
+class _CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const _CustomAppBar({
     Key? key,
   }) : super(key: key);
