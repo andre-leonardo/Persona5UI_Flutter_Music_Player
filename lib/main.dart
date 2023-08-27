@@ -6,18 +6,23 @@ import 'package:phantom_tunes/search_screen.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:phantom_tunes/utilis/global_variables.dart';
 
+
+//this code is a frankenstein's monster made with various tutorial from indian programmers
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Permission.storage.request();
   await Hive.initFlutter();
   await JustAudioBackground.init(
-    androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
-    androidNotificationChannelName: 'Phantom Tunes',
-    androidNotificationOngoing: true,
-    notificationColor: const Color(0xffff0505),
-    androidNotificationChannelDescription: 'Phantom Tunes',
-
+  androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
+  androidNotificationChannelName: 'Phantom Tunes',
+  androidNotificationOngoing: true,
+  notificationColor: const Color(0xffff0505),
+  androidNotificationChannelDescription: 'Phantom Tunes',
   );
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 
@@ -38,7 +43,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           fontFamily: 'Persona',
           textTheme: const TextTheme(
-            bodyText1: TextStyle(
+            bodyLarge: TextStyle(
               color: Color(0xffffffff), 
               fontFamily: 'Persona'
             ),
