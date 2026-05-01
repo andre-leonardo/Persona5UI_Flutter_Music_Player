@@ -1,31 +1,4 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
-import org.gradle.kotlin.dsl.closureOf
-import org.gradle.api.Project
-import com.android.build.gradle.BaseExtension
-import com.android.build.gradle.LibraryExtension
-import com.android.build.gradle.AppExtension
-import org.gradle.api.file.Directory
-import org.gradle.api.tasks.compile.JavaCompile
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
-plugins {
-    id("com.android.application") version "8.7.0" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.0" apply false
-}
-
-buildscript {
-    val kotlin_version: String by extra("1.9.0")
-
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.7.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
-    }
-}
 
 allprojects {
     repositories {
@@ -34,7 +7,6 @@ allprojects {
     }
 }
 
-// Custom build directory location
 val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()
 rootProject.layout.buildDirectory.value(newBuildDir)
 
@@ -43,42 +15,52 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
 
-// START: Namespace injection and Java/Kotlin compatibility enforcement
-subprojects {
-    afterEvaluate(closureOf<Project> {
-        // Force Java 17 for Java compile tasks
-        tasks.withType<JavaCompile>().configureEach {
-            sourceCompatibility = "17"
-            targetCompatibility = "17"
-        }
-
-        // Force Java 17 for Kotlin compile tasks
-        tasks.withType<KotlinCompile>().configureEach {
-            kotlinOptions.jvmTarget = "17"
-        }
-
-        // Namespace fallback (optional)
-        val androidExtension = extensions.findByName("android")
-        if (androidExtension != null) {
-            when (androidExtension) {
-                is LibraryExtension -> {
-                    if (androidExtension.namespace == null) {
-                        androidExtension.namespace = group.toString() ?: "com.example.android.library"
-                    }
-                }
-                is AppExtension -> {
-                    if (androidExtension.namespace == null) {
-                        androidExtension.namespace = group.toString() ?: "com.example.android.app"
-                    }
-                }
-            }
-        }
-    })
-}
-// END: Namespace injection
-
 subprojects {
     project.evaluationDependsOn(":app")
+}
+
+// Fix old plugins: inject namespace (AGP 8+ requirement) and
+// force Java/Kotlin JVM target to 17 (some plugins use 8 or 11).
+subprojects {
+    // Skip the :app project — it's already configured in app/build.gradle.kts
+    if (project.name != "app") {
+        afterEvaluate {
+            val androidExt = extensions.findByName("android")
+            if (androidExt != null && androidExt is com.android.build.gradle.LibraryExtension) {
+                // Inject namespace from AndroidManifest if missing
+                if (androidExt.namespace.isNullOrEmpty()) {
+                    val manifestFile = file("${projectDir}/src/main/AndroidManifest.xml")
+                    if (manifestFile.exists()) {
+                        val content = manifestFile.readText()
+                        val packageRegex = Regex("""package="([^"]+)"""")
+                        val match = packageRegex.find(content)
+                        if (match != null) {
+                            androidExt.namespace = match.groupValues[1]
+                        }
+                    }
+                }
+
+                // Force Java compatibility to 17
+                androidExt.compileOptions {
+                    sourceCompatibility = JavaVersion.VERSION_17
+                    targetCompatibility = JavaVersion.VERSION_17
+                }
+            }
+
+            // Force Kotlin JVM target to 17
+            tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+                kotlinOptions {
+                    jvmTarget = "17"
+                }
+            }
+
+            // Force Java compile tasks to 17
+            tasks.withType<JavaCompile>().configureEach {
+                sourceCompatibility = "17"
+                targetCompatibility = "17"
+            }
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {

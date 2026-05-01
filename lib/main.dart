@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For SystemChrome
 import 'package:phantom_tunes/home_screen.dart';
-import 'package:phantom_tunes/utilis/app_state.dart';
 // If you plan to use audio_service for background playback:
 // @pragma('vm:entry-point')
 // void audioPlayerTaskEntrypoint() async {

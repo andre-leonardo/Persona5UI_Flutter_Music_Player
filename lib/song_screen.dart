@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
-import 'package:just_audio/just_audio.dart';
+
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:phantom_tunes/home_screen.dart';
 import 'package:phantom_tunes/utilis/app_state.dart';
@@ -60,7 +60,7 @@ class _SongScreenState extends State<SongScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset("assets/images/persona_logo.png", height: 100),
+                      Image.asset("assets/images/persona.png", height: 100),
                       const SizedBox(height: 20),
                       const Text(
                         "No song playing...",
@@ -177,7 +177,7 @@ class _SongScreenState extends State<SongScreen> {
                     child: Persona5SlantedArtwork(
                     songId: song.id,
                     size: MediaQuery.of(context).size.width * 0.7, // Set desired size
-                    fallbackImagePath: "assets/images/persona_logo.png",
+                    fallbackImagePath: "assets/images/persona.png",
                   ),
                   ),
                   const Spacer(),

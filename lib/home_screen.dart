@@ -1,16 +1,15 @@
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart'; // Keep if you use it in SongScreen
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fluttertoast/fluttertoast.dart'; // Keep one toast library
 import 'package:phantom_tunes/playlist_screen.dart';
 import 'package:phantom_tunes/utilis/appbar.dart'; // Assuming this is your custom app bar
-import 'package:just_audio/just_audio.dart';
-import 'package:rxdart/rxdart.dart'; // Keep if used for PositionData in SongScreen
+
 import 'package:on_audio_query/on_audio_query.dart';
-import 'package:audio_service/audio_service.dart'; // Keep if you're setting up background audio
+
 import 'package:phantom_tunes/screen_customization.dart';
 import 'package:phantom_tunes/song_screen.dart';
-import 'package:phantom_tunes/search_screen.dart'; // Assuming you have this
+
 import 'package:phantom_tunes/utilis/app_state.dart'; // Import your new app_state
 
 // Helper for toasts (consider using a custom Persona 5 themed toast)
@@ -37,11 +36,12 @@ class _HomeScreenState extends State<HomeScreen> {
   // We'll manage current screen index locally for BottomNavigationBar
   // but the player visibility will come from AppState
   int _selectedIndex = 0;
+  bool _hasPermission = false;
 
   @override
   void initState() {
     super.initState();
-    requestStoragePermission();
+    _checkAndRequestPermission();
 
     // Listen to changes in the player's current index to update the global currentPlayingSong
     player.currentIndexStream.listen((index) {
@@ -84,18 +84,34 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Request storage permission
-  void requestStoragePermission() async {
+  // Request storage permission, then allow queries
+  Future<void> _checkAndRequestPermission() async {
     if (!kIsWeb) {
-      bool permissionStatus = await audioQuery.permissionsStatus();
-      if (!permissionStatus) {
-        bool granted = await audioQuery.permissionsRequest();
-        if (!granted) {
-          showCustomToast(context, "Storage permission denied. Cannot load songs.");
+      try {
+        bool permissionStatus = await audioQuery.permissionsStatus();
+        if (!permissionStatus) {
+          permissionStatus = await audioQuery.permissionsRequest();
+        }
+        if (mounted) {
+          setState(() {
+            _hasPermission = permissionStatus;
+          });
+          if (!permissionStatus) {
+            showCustomToast(context, "Storage permission denied. Cannot load songs.");
+          }
+        }
+      } catch (e) {
+        debugPrint("Permission error: $e");
+        if (mounted) {
+          setState(() {
+            _hasPermission = true; // Try anyway
+          });
         }
       }
-      // Trigger a rebuild after permission status is checked/requested
-      setState(() {});
+    } else {
+      setState(() {
+        _hasPermission = true;
+      });
     }
   }
 
@@ -157,6 +173,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSongsList() {
+    // Don't query until permissions are granted
+    if (!_hasPermission) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: Color(0xffff0505)),
+            SizedBox(height: 16),
+            Text("Requesting permissions...", style: TextStyle(color: Colors.white, fontFamily: 'Arsenal')),
+          ],
+        ),
+      );
+    }
+
     return FutureBuilder<List<SongModel>>(
       future: audioQuery.querySongs(
         sortType: null, // Default sort or specify as needed
@@ -222,7 +252,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
-                  trailing: Image.asset("assets/icons/more.png", height: 30),
+                  trailing: GestureDetector(
+                    onTap: () => _showSongOptions(context, song),
+                    child: Image.asset("assets/icons/more.png", height: 30),
+                  ),
                   leading: SizedBox(
                     width: 0.15 * MediaQuery.of(context).size.width,
                     height: 0.1 * MediaQuery.of(context).size.height,
@@ -243,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             id: song.id,
                             type: ArtworkType.AUDIO,
                             nullArtworkWidget: Image.asset(
-                              "assets/images/persona_logo.png", // Fallback image
+                              "assets/images/persona.png", // Fallback image
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -272,6 +305,254 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
+    );
+  }
+
+  void _showSongOptions(BuildContext context, SongModel song) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(
+        side: BorderSide(color: Color(0xffff0505), width: 2),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(0)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header with song name
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    song.title,
+                    style: const TextStyle(
+                      fontFamily: 'Persona',
+                      color: Colors.white,
+                      fontSize: 18,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+                const Divider(color: Color(0xffff0505), height: 1),
+                // Add to playlist
+                ListTile(
+                  leading: const Icon(Icons.playlist_add, color: Color(0xffff0505)),
+                  title: const Text(
+                    "Add to playlist",
+                    style: TextStyle(
+                      fontFamily: 'Arsenal',
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showPlaylistPicker(song);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showPlaylistPicker(SongModel song) async {
+    try {
+      final playlists = await audioQuery.queryPlaylists(
+        sortType: PlaylistSortType.DATE_ADDED,
+        orderType: OrderType.DESC_OR_GREATER,
+      );
+
+      if (!mounted) return;
+
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.black,
+        shape: const RoundedRectangleBorder(
+          side: BorderSide(color: Color(0xffff0505), width: 2),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(0)),
+        ),
+        builder: (ctx) {
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    "CHOOSE PLAYLIST",
+                    style: TextStyle(
+                      fontFamily: 'Persona',
+                      color: Colors.white,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+                const Divider(color: Color(0xffff0505), height: 1),
+                // Create new
+                ListTile(
+                  leading: const Icon(Icons.add, color: Color(0xffff0505)),
+                  title: const Text(
+                    "Create new playlist",
+                    style: TextStyle(
+                      fontFamily: 'Arsenal',
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final name = await _showCreatePlaylistDialog();
+                    if (name != null && name.trim().isNotEmpty) {
+                      final created = await audioQuery.createPlaylist(name.trim());
+                      if (created) {
+                        // Re-query to get the new playlist's ID
+                        final updatedPlaylists = await audioQuery.queryPlaylists(
+                          sortType: PlaylistSortType.DATE_ADDED,
+                          orderType: OrderType.DESC_OR_GREATER,
+                        );
+                        if (updatedPlaylists.isNotEmpty) {
+                          final newPlaylist = updatedPlaylists.first;
+                          await audioQuery.addToPlaylist(newPlaylist.id, song.id);
+                          Fluttertoast.showToast(
+                            msg: "\"${song.title}\" added to \"$name\"!",
+                            backgroundColor: const Color(0xffff0505),
+                            textColor: Colors.white,
+                          );
+                        }
+                      }
+                    }
+                  },
+                ),
+                // Existing playlists
+                if (playlists.isNotEmpty)
+                  ...playlists.map((playlist) => ListTile(
+                    leading: const Icon(Icons.queue_music, color: Colors.white54),
+                    title: Text(
+                      playlist.playlist,
+                      style: const TextStyle(
+                        fontFamily: 'Arsenal',
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                    ),
+                    subtitle: Text(
+                      "${playlist.numOfSongs} song${playlist.numOfSongs == 1 ? '' : 's'}",
+                      style: const TextStyle(
+                        fontFamily: 'Arsenal',
+                        color: Colors.white38,
+                        fontSize: 13,
+                      ),
+                    ),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      final success = await audioQuery.addToPlaylist(
+                        playlist.id,
+                        song.id,
+                      );
+                      if (success) {
+                        Fluttertoast.showToast(
+                          msg: "\"${song.title}\" added to \"${playlist.playlist}\"!",
+                          backgroundColor: const Color(0xffff0505),
+                          textColor: Colors.white,
+                        );
+                      } else {
+                        Fluttertoast.showToast(
+                          msg: "Failed to add song",
+                          backgroundColor: Colors.grey,
+                          textColor: Colors.white,
+                        );
+                      }
+                    },
+                  )),
+                const SizedBox(height: 8),
+              ],
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      debugPrint("Error loading playlists: $e");
+    }
+  }
+
+  Future<String?> _showCreatePlaylistDialog() {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.black,
+        shape: const RoundedRectangleBorder(
+          side: BorderSide(color: Color(0xffff0505), width: 2),
+          borderRadius: BorderRadius.zero,
+        ),
+        title: const Text(
+          "NEW PLAYLIST",
+          style: TextStyle(
+            fontFamily: 'Persona',
+            color: Colors.white,
+            fontSize: 22,
+          ),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(
+            fontFamily: 'Arsenal',
+            color: Colors.white,
+            fontSize: 16,
+          ),
+          cursorColor: const Color(0xffff0505),
+          decoration: const InputDecoration(
+            hintText: "Playlist name",
+            hintStyle: TextStyle(color: Colors.white38, fontFamily: 'Arsenal'),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.white24),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Color(0xffff0505), width: 2),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              "CANCEL",
+              style: TextStyle(
+                fontFamily: 'Persona',
+                color: Colors.white54,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            style: TextButton.styleFrom(
+              backgroundColor: const Color(0xffff0505),
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+              ),
+            ),
+            child: const Text(
+              "CREATE",
+              style: TextStyle(
+                fontFamily: 'Persona',
+                color: Colors.white,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
