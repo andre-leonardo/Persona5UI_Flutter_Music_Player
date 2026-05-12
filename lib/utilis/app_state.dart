@@ -10,12 +10,15 @@ enum AppScreen { songs, playlists, favorites }
 // ─── Global singletons ───
 final OnAudioQuery audioQuery = OnAudioQuery();
 
-// These are populated after AudioService.init() in main.dart
+// Populated after AudioService.init() in main.dart
 late AudioPlayerHandler audioHandler;
 
 // ─── Observable state ───
 ValueNotifier<AppScreen> currentAppScreen = ValueNotifier(AppScreen.songs);
+
+/// The complete device song library — never overwritten by playlists.
 ValueNotifier<List<SongModel>> allSongs = ValueNotifier([]);
+
 ValueNotifier<SongModel?> currentPlayingSong = ValueNotifier(null);
 ValueNotifier<bool> isPlayerVisible = ValueNotifier(false);
 ValueNotifier<Set<int>> favoriteSongIds = ValueNotifier({});
@@ -26,6 +29,13 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   final ValueNotifier<bool> isPlayingNotifier = ValueNotifier(false);
   final ValueNotifier<LoopMode> loopModeNotifier = ValueNotifier(LoopMode.off);
   final ValueNotifier<bool> shuffleNotifier = ValueNotifier(false);
+
+  /// The songs currently loaded into the player (may differ from allSongs
+  /// when a playlist is playing).
+  List<SongModel> _loadedSongs = [];
+
+  /// Whether the player is currently loaded with the global library.
+  bool _isGlobalLibraryLoaded = false;
 
   AudioPlayer get player => _player;
 
@@ -38,12 +48,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       isPlayingNotifier.value = state.playing;
     });
 
-    // Track current song index
+    // Track current song index — uses _loadedSongs (the actual player queue)
     _player.currentIndexStream.listen((index) {
-      if (index != null && allSongs.value.isNotEmpty && index < allSongs.value.length) {
-        currentPlayingSong.value = allSongs.value[index];
-        // Update mediaItem for notification
-        final song = allSongs.value[index];
+      if (index != null && _loadedSongs.isNotEmpty && index < _loadedSongs.length) {
+        currentPlayingSong.value = _loadedSongs[index];
+        final song = _loadedSongs[index];
         mediaItem.add(_songToMediaItem(song));
       }
     });
@@ -67,8 +76,10 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     );
   }
 
-  // Load all songs into the player queue
+  // ─── Load a list of songs into the player queue ───
   Future<void> loadSongs(List<SongModel> songs) async {
+    _loadedSongs = List.from(songs);
+
     final sources = songs.map((song) => AudioSource.uri(
       Uri.parse(song.uri!),
       tag: _songToMediaItem(song),
@@ -83,14 +94,25 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     queue.add(songs.map(_songToMediaItem).toList());
   }
 
-  // Play a specific song by index
+  // ─── Play a song from the global library by its index in allSongs ───
   Future<void> playSongAt(int index) async {
-    if (allSongs.value.isEmpty) return;
-
-    // Check if we need to reload the source
-    if (_player.audioSource == null) {
+    // Re-load the global library if it's not currently loaded
+    if (_player.audioSource == null || !_isGlobalLibraryLoaded) {
+      if (allSongs.value.isEmpty) return;
       await loadSongs(allSongs.value);
+      _isGlobalLibraryLoaded = true;
     }
+    if (index < 0 || index >= _loadedSongs.length) return;
+
+    await _player.seek(Duration.zero, index: index);
+    await _player.play();
+  }
+
+  // ─── Play from a custom queue (playlists, search results, etc.) ───
+  Future<void> playFromCustomQueue(List<SongModel> songs, int index) async {
+    if (songs.isEmpty) return;
+    await loadSongs(songs);
+    _isGlobalLibraryLoaded = false;
 
     await _player.seek(Duration.zero, index: index);
     await _player.play();

@@ -10,18 +10,7 @@ import 'package:phantom_tunes/screen_customization.dart';
 import 'package:phantom_tunes/song_screen.dart';
 import 'package:phantom_tunes/utilis/app_state.dart';
 import 'package:phantom_tunes/utilis/favorites_manager.dart';
-
-// ─── Toast helper ───
-void showCustomToast(BuildContext context, String message) {
-  Fluttertoast.showToast(
-    msg: message,
-    toastLength: Toast.LENGTH_SHORT,
-    gravity: ToastGravity.CENTER,
-    backgroundColor: const Color(0xFFFF0505),
-    textColor: Colors.white,
-    fontSize: 16.0,
-  );
-}
+import 'package:phantom_tunes/utilis/toast_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -305,10 +294,9 @@ class _HomeScreenState extends State<HomeScreen> {
             .toList()
           ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
 
-        // Update global song list and load into player
+        // Update global song list (player loads lazily on first tap)
         if (allSongs.value.length != songs.length) {
           allSongs.value = songs;
-          audioHandler.loadSongs(songs);
         }
 
         return Padding(

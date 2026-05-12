@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:on_audio_query/on_audio_query.dart';
-import 'package:phantom_tunes/home_screen.dart';
 import 'package:phantom_tunes/utilis/app_state.dart';
 import 'package:phantom_tunes/utilis/favorites_manager.dart';
+import 'package:phantom_tunes/utilis/toast_helper.dart';
 import 'package:phantom_tunes/screen_customization.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -24,7 +24,8 @@ class SongScreen extends StatefulWidget {
 
 class _SongScreenState extends State<SongScreen> with SingleTickerProviderStateMixin {
   late AnimationController _artworkAnimController;
-  late Animation<double> _artworkRotation;
+  late Animation<double> _artworkFade;
+  int? _lastSongId;
 
   Stream<PositionData> get _positionDataStream =>
       Rx.combineLatest3<Duration, Duration, Duration?, PositionData>(
@@ -40,16 +41,29 @@ class _SongScreenState extends State<SongScreen> with SingleTickerProviderStateM
     super.initState();
     _artworkAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 400),
     );
-    _artworkRotation = Tween<double>(begin: 0, end: 1).animate(
+    _artworkFade = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _artworkAnimController, curve: Curves.easeOut),
     );
     _artworkAnimController.forward();
+
+    // Listen for song changes to replay the artwork fade
+    currentPlayingSong.addListener(_onSongChanged);
+  }
+
+  void _onSongChanged() {
+    final song = currentPlayingSong.value;
+    if (song != null && song.id != _lastSongId) {
+      _lastSongId = song.id;
+      _artworkAnimController.reset();
+      _artworkAnimController.forward();
+    }
   }
 
   @override
   void dispose() {
+    currentPlayingSong.removeListener(_onSongChanged);
     _artworkAnimController.dispose();
     super.dispose();
   }
@@ -175,7 +189,7 @@ class _SongScreenState extends State<SongScreen> with SingleTickerProviderStateM
   Widget _buildArtwork(SongModel song, double screenWidth) {
     final artSize = screenWidth * 0.72;
     return FadeTransition(
-      opacity: _artworkRotation,
+      opacity: _artworkFade,
       child: Persona5SlantedArtwork(
         songId: song.id,
         size: artSize,
@@ -279,7 +293,7 @@ class _SongScreenState extends State<SongScreen> with SingleTickerProviderStateM
             if (audioHandler.player.hasPrevious) {
               await audioHandler.skipToPrevious();
             } else {
-              showCustomToast(context, "No previous song");
+              if (mounted) showCustomToast(context, "No previous song");
             }
           }),
           // Play/Pause — larger
@@ -298,7 +312,7 @@ class _SongScreenState extends State<SongScreen> with SingleTickerProviderStateM
             if (audioHandler.player.hasNext) {
               await audioHandler.skipToNext();
             } else {
-              showCustomToast(context, "No next song");
+              if (mounted) showCustomToast(context, "No next song");
             }
           }),
           // Loop
