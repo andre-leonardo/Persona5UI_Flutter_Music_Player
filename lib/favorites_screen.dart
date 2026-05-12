@@ -65,23 +65,11 @@ class FavoritesScreen extends StatelessWidget {
                         vertical: 0.012 * MediaQuery.of(context).size.height,
                       ),
                       child: ListTile(
-                        leading: SizedBox(
-                          width: 50,
-                          height: 50,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: const Color(0xFFFF0505), width: 1.5),
-                            ),
-                            child: QueryArtworkWidget(
-                              artworkBorder: BorderRadius.zero,
-                              id: song.id,
-                              type: ArtworkType.AUDIO,
-                              nullArtworkWidget: Image.asset(
-                                "assets/images/persona.png",
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        leading: Persona5SlantedArtwork(
+                          songId: song.id,
+                          size: 50,
+                          fallbackImagePath: "assets/images/persona.png",
                         ),
                         title: Text(
                           song.title,

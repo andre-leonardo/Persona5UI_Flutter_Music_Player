@@ -255,21 +255,24 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.add, color: Color(0xffff0505), size: 28),
-                    SizedBox(width: 12),
-                    Text(
-                      "CREATE NEW PLAYLIST",
-                      style: TextStyle(
-                        fontFamily: 'Persona',
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add, color: Color(0xffff0505), size: 28),
+                      SizedBox(width: 12),
+                      Text(
+                        "CREATE NEW PLAYLIST",
+                        style: TextStyle(
+                          fontFamily: 'Persona',
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -798,24 +801,11 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                 ),
                               ),
                               child: ListTile(
-                                leading: Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: Colors.white24,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: QueryArtworkWidget(
-                                    id: song.id,
-                                    type: ArtworkType.AUDIO,
-                                    artworkBorder: BorderRadius.zero,
-                                    nullArtworkWidget: Image.asset(
-                                      "assets/images/persona.png",
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                leading: Persona5SlantedArtwork(
+                                  songId: song.id,
+                                  size: 48,
+                                  fallbackImagePath: "assets/images/persona.png",
                                 ),
                                 title: Text(
                                   song.title,

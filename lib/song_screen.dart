@@ -376,15 +376,18 @@ class _SongScreenState extends State<SongScreen> with SingleTickerProviderStateM
   Widget _buildControlButton(String assetPath, VoidCallback onTap, {double size = 52}) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: Colors.black,
-          border: Border.all(color: const Color(0xFFFF0505), width: 2.5),
+      child: CustomPaint(
+        painter: _SlantedButtonPainter(
+          bgColor: Colors.black,
+          borderColor: const Color(0xFFFF0505),
+          borderWidth: 2.5,
         ),
-        child: Center(
-          child: Image.asset(assetPath, height: size * 0.5, color: Colors.white),
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Center(
+            child: Image.asset(assetPath, height: size * 0.5, color: Colors.white),
+          ),
         ),
       ),
     );
@@ -394,21 +397,21 @@ class _SongScreenState extends State<SongScreen> with SingleTickerProviderStateM
   Widget _buildSmallControl(String assetPath, VoidCallback onTap, {bool active = false}) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFFFF0505).withValues(alpha: 0.2) : Colors.transparent,
-          border: Border.all(
-            color: active ? const Color(0xFFFF0505) : Colors.white38,
-            width: 1.5,
-          ),
+      child: CustomPaint(
+        painter: _SlantedButtonPainter(
+          bgColor: active ? const Color(0xFFFF0505).withValues(alpha: 0.2) : Colors.transparent,
+          borderColor: active ? const Color(0xFFFF0505) : Colors.white38,
+          borderWidth: 1.5,
         ),
-        child: Center(
-          child: Image.asset(
-            assetPath,
-            height: 18,
-            color: active ? const Color(0xFFFF0505) : Colors.white54,
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Center(
+            child: Image.asset(
+              assetPath,
+              height: 18,
+              color: active ? const Color(0xFFFF0505) : Colors.white54,
+            ),
           ),
         ),
       ),
@@ -419,22 +422,74 @@ class _SongScreenState extends State<SongScreen> with SingleTickerProviderStateM
   Widget _buildPersonaButton(String text, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFF0505),
-          border: Border.all(color: Colors.white, width: 2),
+      child: CustomPaint(
+        painter: _SlantedButtonPainter(
+          bgColor: const Color(0xFFFF0505),
+          borderColor: Colors.white,
+          borderWidth: 2.0,
         ),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontFamily: 'Persona',
-            fontSize: 16,
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontFamily: 'Persona',
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ),
     );
+  }
+}
+
+class _SlantedButtonPainter extends CustomPainter {
+  final Color bgColor;
+  final Color borderColor;
+  final double borderWidth;
+
+  _SlantedButtonPainter({
+    required this.bgColor,
+    required this.borderColor,
+    this.borderWidth = 2.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final dx = size.height * 0.15;
+    final dy = size.height * 0.05;
+    
+    final path = Path();
+    path.moveTo(dx, dy); 
+    path.lineTo(0, size.height); 
+    path.lineTo(size.width - dx, size.height - dy); 
+    path.lineTo(size.width, 0); 
+    path.close();
+
+    if (bgColor != Colors.transparent) {
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = bgColor
+          ..style = PaintingStyle.fill,
+      );
+    }
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = borderColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = borderWidth,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_SlantedButtonPainter oldDelegate) {
+    return oldDelegate.bgColor != bgColor || 
+           oldDelegate.borderColor != borderColor ||
+           oldDelegate.borderWidth != borderWidth;
   }
 }

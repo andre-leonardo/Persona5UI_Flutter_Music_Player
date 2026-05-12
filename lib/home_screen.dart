@@ -358,6 +358,7 @@ class _HomeScreenState extends State<HomeScreen> {
           vertical: 0.012 * MediaQuery.of(context).size.height,
         ),
         child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
           title: Text(
             song.title,
             style: const TextStyle(
@@ -405,23 +406,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          leading: SizedBox(
-            width: 50,
-            height: 50,
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFFFF0505), width: 1.5),
-              ),
-              child: QueryArtworkWidget(
-                artworkBorder: BorderRadius.zero,
-                id: song.id,
-                type: ArtworkType.AUDIO,
-                nullArtworkWidget: Image.asset(
-                  "assets/images/persona.png",
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
+          leading: Persona5SlantedArtwork(
+            songId: song.id,
+            size: 50,
+            fallbackImagePath: "assets/images/persona.png",
           ),
           onTap: () async {
             await audioHandler.playSongAt(index);

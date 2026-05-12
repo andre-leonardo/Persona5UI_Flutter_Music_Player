@@ -52,17 +52,18 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       // --- TITLE (Center content) ---
       // The title itself will automatically be horizontally constrained by the AppBar
       // if `leading` and `actions` are used correctly.
-      title: const Text(
-        "PHANTOM TUNES", // Your app name
-        style: TextStyle(
-          fontFamily: 'Persona', // Use your Persona font
-          fontSize: 22, // Reduced font size for better fit
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
+      title: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: const Text(
+          "PHANTOM TUNES", // Your app name
+          style: TextStyle(
+            fontFamily: 'Persona', // Use your Persona font
+            fontSize: 22, // Reduced font size for better fit
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          textAlign: TextAlign.center, // Center text within its allocated space
         ),
-        textAlign: TextAlign.center, // Center text within its allocated space
-        maxLines: 1, // Crucial: Prevents text from wrapping to another line
-        overflow: TextOverflow.ellipsis, // Crucial: Adds "..." if text is too long
       ),
     );
   }
