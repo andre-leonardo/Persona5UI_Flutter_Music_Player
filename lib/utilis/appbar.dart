@@ -15,21 +15,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       titleSpacing: 0, // Reduces default title spacing
 
       // --- LEADING ICON (Left side) ---
-      leading: GestureDetector(
-        onTap: () {
-          // Ensure your Scaffold has a Drawer defined in HomeScreen
-          Scaffold.of(context).openDrawer();
-        },
-        child: Padding(
-          padding: const EdgeInsets.only(left: 16.0), // Padding from the screen edge
-          child: Image.asset(
-            "assets/images/persona2.png", // Corrected name
-            height: 35, // Consistently set height
-            errorBuilder: (ctx, error, stacktrace) { // Add errorBuilder for debug
-              debugPrint('Error loading menu_icon.png in AppBar: $error');
-              return const Icon(Icons.error_outline, color: Colors.red, size: 35);
-            },
-          ),
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 16.0),
+        child: Image.asset(
+          "assets/images/persona2.png",
+          height: 35,
+          errorBuilder: (ctx, error, stacktrace) {
+            debugPrint('Error loading persona2.png in AppBar: $error');
+            return const Icon(Icons.error_outline, color: Colors.red, size: 35);
+          },
         ),
       ),
 

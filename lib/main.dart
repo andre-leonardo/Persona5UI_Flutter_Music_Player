@@ -1,20 +1,29 @@
 // lib/main.dart
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // For SystemChrome
+import 'package:flutter/services.dart';
 import 'package:phantom_tunes/home_screen.dart';
-// If you plan to use audio_service for background playback:
-// @pragma('vm:entry-point')
-// void audioPlayerTaskEntrypoint() async {
-//   AudioServiceBackground.run(() => AudioPlayerHandler());
-// }
+import 'package:phantom_tunes/utilis/app_state.dart';
+import 'package:phantom_tunes/utilis/favorites_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Set desired orientation (if needed)
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  // If using AudioService, initialize it here:
-  // await AudioService.init(builder: () => AudioPlayerHandler());
+  // Initialize audio_service with our handler
+  audioHandler = await AudioService.init(
+    builder: () => AudioPlayerHandler(),
+    config: const AudioServiceConfig(
+      androidNotificationChannelId: 'com.example.phantom_tunes.audio',
+      androidNotificationChannelName: 'Phantom Tunes',
+      androidNotificationOngoing: true,
+      androidShowNotificationBadge: true,
+      androidNotificationIcon: 'mipmap/ic_launcher',
+    ),
+  );
+
+  // Load persisted favorites
+  await FavoritesManager().loadFavorites();
 
   runApp(const MyApp());
 }
@@ -28,10 +37,9 @@ class MyApp extends StatelessWidget {
       title: 'Phantom Tunes',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // Define your Persona 5 inspired theme here
-        primaryColor: const Color(0xffff0505),
+        primaryColor: const Color(0xFFFF0505),
         hintColor: Colors.white,
-        scaffoldBackgroundColor: Colors.black, // Dark background
+        scaffoldBackgroundColor: Colors.black,
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
@@ -40,9 +48,7 @@ class MyApp extends StatelessWidget {
         textTheme: const TextTheme(
           bodyLarge: TextStyle(fontFamily: 'Arsenal', color: Colors.white),
           bodyMedium: TextStyle(fontFamily: 'Arsenal', color: Colors.white),
-          // Add other text styles as needed
         ),
-        // ... more theming
       ),
       home: const HomeScreen(),
     );

@@ -117,7 +117,7 @@ class _SlantedArtworkBorderPainter extends CustomPainter {
 
   // Use the same path, but scale it slightly for the inner border.
   // The scale factor (e.g., 0.98) controls how far *in* the inner border is.
-  final Matrix4 scaleMatrix = Matrix4.identity()..scale(0.98, 0.98);
+  final Matrix4 scaleMatrix = Matrix4.identity()..scaleByDouble(0.98, 0.98, 1.0, 1);
   final Path innerPath = slantedPath.transform(scaleMatrix.storage);
   // Optional: If you need to shift the inner border very slightly to a specific corner
   // final Matrix4 translateMatrix = Matrix4.translationValues(size.width * 0.005, size.height * 0.005, 0);

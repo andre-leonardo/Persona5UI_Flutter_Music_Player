@@ -1,2 +1,0 @@
-C:/Dev/projetos/Persona5UI_Flutter_Music_Player/android/app/.cxx/Debug/3x2b2560/x86/CMakeFiles/edit_cache.dir
-C:/Dev/projetos/Persona5UI_Flutter_Music_Player/android/app/.cxx/Debug/3x2b2560/x86/CMakeFiles/rebuild_cache.dir

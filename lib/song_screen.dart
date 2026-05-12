@@ -1,13 +1,14 @@
+// lib/song_screen.dart
 import 'package:flutter/material.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
-
+import 'package:just_audio/just_audio.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:phantom_tunes/home_screen.dart';
 import 'package:phantom_tunes/utilis/app_state.dart';
+import 'package:phantom_tunes/utilis/favorites_manager.dart';
 import 'package:phantom_tunes/screen_customization.dart';
-import 'package:rxdart/rxdart.dart'; // For custom painters
+import 'package:rxdart/rxdart.dart';
 
-// A utility class to hold position data for the progress bar
 class PositionData {
   const PositionData(this.position, this.bufferedPosition, this.duration);
   final Duration position;
@@ -17,244 +18,337 @@ class PositionData {
 
 class SongScreen extends StatefulWidget {
   const SongScreen({super.key});
-
   @override
   State<SongScreen> createState() => _SongScreenState();
 }
 
-class _SongScreenState extends State<SongScreen> {
-  // Stream to combine player state for the progress bar
+class _SongScreenState extends State<SongScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _artworkAnimController;
+  late Animation<double> _artworkRotation;
+
   Stream<PositionData> get _positionDataStream =>
       Rx.combineLatest3<Duration, Duration, Duration?, PositionData>(
-          player.positionStream,
-          player.bufferedPositionStream,
-          player.durationStream,
-          (position, bufferedPosition, duration) => PositionData(
-              position, bufferedPosition, duration ?? Duration.zero));
+        audioHandler.player.positionStream,
+        audioHandler.player.bufferedPositionStream,
+        audioHandler.player.durationStream,
+        (position, buffered, duration) =>
+            PositionData(position, buffered, duration ?? Duration.zero),
+      );
 
   @override
   void initState() {
     super.initState();
-    // No need to listen to currentIndexStream here if currentPlayingSong is already updated globally
-    // We listen to currentPlayingSong directly.
+    _artworkAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _artworkRotation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _artworkAnimController, curve: Curves.easeOut),
+    );
+    _artworkAnimController.forward();
+  }
+
+  @override
+  void dispose() {
+    _artworkAnimController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent, // Assuming a background gradient/image
-      body: Stack(
-        children: [
-          // Background (Optional: can be a global background in main.dart)
-          // For now, let's keep it simple or use a container with a color
-          Container(
-            color: Colors.black, // Dark background for Persona 5 feel
-          ),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
-          // Main content
-          ValueListenableBuilder<SongModel?>(
-            valueListenable: currentPlayingSong,
-            builder: (context, song, child) {
-              if (song == null) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset("assets/images/persona.png", height: 100),
-                      const SizedBox(height: 20),
-                      const Text(
-                        "No song playing...",
-                        style: TextStyle(
-                          fontFamily: 'Arsenal',
-                          color: Colors.white,
-                          fontSize: 20,
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: ValueListenableBuilder<SongModel?>(
+        valueListenable: currentPlayingSong,
+        builder: (context, song, _) {
+          if (song == null) {
+            return _buildNoSongState();
+          }
+          return SafeArea(
+            child: Column(
+              children: [
+                // ─── Top bar: back + song info ───
+                _buildTopBar(song, screenWidth),
+
+                const Spacer(flex: 1),
+
+                // ─── Album artwork ───
+                _buildArtwork(song, screenWidth),
+
+                const Spacer(flex: 1),
+
+                // ─── Song title + artist (below artwork) ───
+                _buildSongInfo(song),
+
+                const SizedBox(height: 20),
+
+                // ─── Progress bar ───
+                _buildProgressBar(),
+
+                const SizedBox(height: 8),
+
+                // ─── Playback controls ───
+                _buildControls(screenHeight),
+
+                const SizedBox(height: 16),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildNoSongState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset("assets/images/persona.png", height: 100),
+          const SizedBox(height: 20),
+          const Text(
+            "No song playing...",
+            style: TextStyle(fontFamily: 'Arsenal', color: Colors.white, fontSize: 20),
+          ),
+          const SizedBox(height: 20),
+          _buildPersonaButton("BACK TO SONGS", () {
+            isPlayerVisible.value = false;
+          }),
+        ],
+      ),
+    );
+  }
+
+  // ─── Top bar ───
+  Widget _buildTopBar(SongModel song, double screenWidth) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Row(
+        children: [
+          // Back button — Persona 5 style
+          GestureDetector(
+            onTap: () => isPlayerVisible.value = false,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF0505),
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 24),
+            ),
+          ),
+          const Spacer(),
+          // Favorite button
+          ValueListenableBuilder<Set<int>>(
+            valueListenable: favoriteSongIds,
+            builder: (context, favorites, _) {
+              final isFav = favorites.contains(song.id);
+              return GestureDetector(
+                onTap: () => FavoritesManager().toggleFavorite(song.id),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    border: Border.all(
+                      color: isFav ? const Color(0xFFFF0505) : Colors.white54,
+                      width: 2,
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    isFav ? Icons.favorite : Icons.favorite_border,
+                    color: isFav ? const Color(0xFFFF0505) : Colors.white,
+                    size: 24,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Artwork ───
+  Widget _buildArtwork(SongModel song, double screenWidth) {
+    final artSize = screenWidth * 0.72;
+    return FadeTransition(
+      opacity: _artworkRotation,
+      child: Persona5SlantedArtwork(
+        songId: song.id,
+        size: artSize,
+        fallbackImagePath: "assets/images/persona.png",
+      ),
+    );
+  }
+
+  // ─── Song info ───
+  Widget _buildSongInfo(SongModel song) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        children: [
+          // Title with slight Persona 5 rotation
+          Transform.rotate(
+            angle: -0.03,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              song.title,
+              style: const TextStyle(
+                fontFamily: 'Persona',
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            song.artist ?? "<Unknown>",
+            style: const TextStyle(
+              fontFamily: 'Arsenal',
+              fontSize: 16,
+              color: Colors.white70,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Progress bar ───
+  Widget _buildProgressBar() {
+    return StreamBuilder<PositionData>(
+      stream: _positionDataStream,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: ProgressBar(
+            progress: data?.position ?? Duration.zero,
+            buffered: data?.bufferedPosition ?? Duration.zero,
+            total: data?.duration ?? Duration.zero,
+            onSeek: audioHandler.seek,
+            barCapShape: BarCapShape.round,
+            baseBarColor: Colors.grey.shade800,
+            progressBarColor: const Color(0xFFFF0505),
+            bufferedBarColor: Colors.grey.shade700,
+            thumbColor: Colors.white,
+            thumbRadius: 8,
+            barHeight: 5,
+            timeLabelTextStyle: const TextStyle(
+              color: Colors.white,
+              fontFamily: 'Arsenal',
+              fontSize: 12,
+            ),
+            timeLabelLocation: TimeLabelLocation.sides,
+          ),
+        );
+      },
+    );
+  }
+
+  // ─── Controls ───
+  Widget _buildControls(double screenHeight) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          // Shuffle
+          ValueListenableBuilder<bool>(
+            valueListenable: audioHandler.shuffleNotifier,
+            builder: (context, shuffleOn, _) {
+              return _buildSmallControl(
+                shuffleOn ? "assets/icons/shuffletrue.png" : "assets/icons/shufflefalse.png",
+                () => audioHandler.toggleShuffle(),
+                active: shuffleOn,
+              );
+            },
+          ),
+          // Previous
+          _buildControlButton("assets/icons/previous.png", () async {
+            if (audioHandler.player.hasPrevious) {
+              await audioHandler.skipToPrevious();
+            } else {
+              showCustomToast(context, "No previous song");
+            }
+          }),
+          // Play/Pause — larger
+          ValueListenableBuilder<bool>(
+            valueListenable: audioHandler.isPlayingNotifier,
+            builder: (context, isPlaying, _) {
+              return _buildControlButton(
+                isPlaying ? "assets/icons/pause.png" : "assets/icons/play.png",
+                () => isPlaying ? audioHandler.pause() : audioHandler.play(),
+                size: 72,
+              );
+            },
+          ),
+          // Next
+          _buildControlButton("assets/icons/next.png", () async {
+            if (audioHandler.player.hasNext) {
+              await audioHandler.skipToNext();
+            } else {
+              showCustomToast(context, "No next song");
+            }
+          }),
+          // Loop
+          ValueListenableBuilder<LoopMode>(
+            valueListenable: audioHandler.loopModeNotifier,
+            builder: (context, loopMode, _) {
+              String iconPath;
+              bool active;
+              switch (loopMode) {
+                case LoopMode.off:
+                  iconPath = "assets/icons/loop.png";
+                  active = false;
+                  break;
+                case LoopMode.all:
+                  iconPath = "assets/icons/loop1.png";
+                  active = true;
+                  break;
+                case LoopMode.one:
+                  iconPath = "assets/icons/loop1.png";
+                  active = true;
+                  break;
+              }
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  _buildSmallControl(
+                    iconPath,
+                    () => audioHandler.cycleLoopMode(),
+                    active: active,
+                  ),
+                  if (loopMode == LoopMode.one)
+                    Positioned(
+                      bottom: 2,
+                      right: 2,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFF0505),
+                          shape: BoxShape.circle,
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xffff0505),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(0), // Sharp corners
-                            side: const BorderSide(color: Colors.white, width: 2), // White border
-                          ),
-                        ),
-                        onPressed: () {
-                          isPlayerVisible.value = false; // Go back to song list
-                        },
                         child: const Text(
-                          "BACK TO SONGS",
+                          "1",
                           style: TextStyle(
-                            fontFamily: 'Persona',
-                            fontSize: 18,
+                            color: Colors.white,
+                            fontSize: 8,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                );
-              }
-
-              // Persona 5 style layout
-              return Column(
-                children: [
-                  // Top Section: Back button and Title/Artist
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 50, 20, 10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Back Button (Persona 5 style)
-                        GestureDetector(
-                          onTap: () {
-                            isPlayerVisible.value = false; // Hide the player, go back to HomeScreen
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xffff0505), // Red background
-                              border: Border.all(color: Colors.white, width: 2), // White border
-                            ),
-                            padding: const EdgeInsets.all(8),
-                            child: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 30),
-                          ),
-                        ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Song Title
-                              Transform.rotate( // Slight rotation for Persona style
-                                angle: -0.05, // Adjust angle as needed
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  song.title,
-                                  style: const TextStyle(
-                                    fontFamily: 'Persona',
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 2,
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              // Artist Name
-                              Transform.rotate( // Slight rotation
-                                angle: -0.05,
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  song.artist ?? "<Unknown>",
-                                  style: const TextStyle(
-                                    fontFamily: 'Arsenal',
-                                    fontSize: 18,
-                                    color: Colors.white70,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                     ),
-                  ),
-                  const Spacer(), // Pushes content to the center/bottom
-
-                  // Album Artwork (Central piece)
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.7,
-                    height: MediaQuery.of(context).size.width * 0.7,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[900], // Placeholder color
-                      border: Border.all(color: const Color(0xffff0505), width: 3), // Red border
-                    ),
-                    // This is where you can apply your custom painter for the slanted border
-                    child: Persona5SlantedArtwork(
-                    songId: song.id,
-                    size: MediaQuery.of(context).size.width * 0.7, // Set desired size
-                    fallbackImagePath: "assets/images/persona.png",
-                  ),
-                  ),
-                  const Spacer(),
-
-                  // Progress Bar
-                  StreamBuilder<PositionData>(
-                    stream: _positionDataStream,
-                    builder: (context, snapshot) {
-                      final positionData = snapshot.data;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
-                        child: ProgressBar(
-                          progress: positionData?.position ?? Duration.zero,
-                          buffered: positionData?.bufferedPosition ?? Duration.zero,
-                          total: positionData?.duration ?? Duration.zero,
-                          onSeek: player.seek,
-                          barCapShape: BarCapShape.round,
-                          baseBarColor: Colors.grey.shade800,
-                          progressBarColor: const Color(0xffff0505), // Persona 5 red
-                          bufferedBarColor: Colors.grey.shade700,
-                          thumbColor: Colors.white,
-                          thumbRadius: 8.0,
-                          barHeight: 5.0,
-                          timeLabelTextStyle: const TextStyle(
-                            color: Colors.white,
-                            fontFamily: 'Arsenal',
-                            fontSize: 12,
-                          ),
-                          // Optional: custom labels for Persona 5 style
-                          timeLabelLocation: TimeLabelLocation.sides,
-                        ),
-                      );
-                    },
-                  ),
-
-                  // Playback Controls
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 40.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        // Previous button
-                        _buildControlIconButton("assets/icons/previous.png", () async {
-                          if (player.hasPrevious) {
-                            await player.seekToPrevious();
-                          } else {
-                            showCustomToast(context, "No previous song");
-                          }
-                        }),
-                        // Play/Pause button
-                        ValueListenableBuilder<bool>(
-                          valueListenable: audioPlayerManager.isPlaying,
-                          builder: (context, isPlaying, child) {
-                            return _buildControlIconButton(
-                              isPlaying ? "assets/icons/pause.png" : "assets/icons/play.png",
-                              () async {
-                                if (isPlaying) {
-                                  await audioPlayerManager.pause();
-                                } else {
-                                  await audioPlayerManager.resume();
-                                }
-                              },
-                              size: 70.0, // Larger size for play/pause
-                            );
-                          },
-                        ),
-                        // Next button
-                        _buildControlIconButton("assets/icons/next.png", () async {
-                          if (player.hasNext) {
-                            await player.seekToNext();
-                          } else {
-                            showCustomToast(context, "No next song");
-                          }
-                        }),
-                      ],
-                    ),
-                  ),
                 ],
               );
             },
@@ -264,57 +358,69 @@ class _SongScreenState extends State<SongScreen> {
     );
   }
 
-  // Helper to build control buttons with Persona 5 style
-  Widget _buildControlIconButton(String assetPath, VoidCallback onPressed, {double size = 50.0}) {
+  // ─── Control button (Persona 5 style) ───
+  Widget _buildControlButton(String assetPath, VoidCallback onTap, {double size = 52}) {
     return GestureDetector(
-      onTap: onPressed,
+      onTap: onTap,
       child: Container(
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: Colors.black, // Background color
-          border: Border.all(color: const Color(0xffff0505), width: 3), // Red border
-          // Could add more complex shapes/shadows here with CustomPainter if desired
+          color: Colors.black,
+          border: Border.all(color: const Color(0xFFFF0505), width: 2.5),
         ),
         child: Center(
-          child: Image.asset(assetPath, height: size * 0.6, color: Colors.white), // Icon
+          child: Image.asset(assetPath, height: size * 0.5, color: Colors.white),
         ),
       ),
     );
   }
 
-  // This Path is for clipping the album art to a slanted rectangle
-  // Path _getAlbumArtPath(double size) {
-  //   Path path = Path();
-  //   // These coordinates define a slightly slanted rectangle relative to the given size
-  //   path.moveTo(size * 0.05, 0); // Start slightly in from top-left
-  //   path.lineTo(0, size * 0.95); // Bottom-left corner, slightly skewed down
-  //   path.lineTo(size * 0.95, size); // Bottom-right corner
-  //   path.lineTo(size, size * 0.05); // Top-right corner, slightly skewed up
-  //   path.close();
-  //   return path;
-  // }
-}
-
-// You need to update ShapeClipper in screen_customization.dart if not already done
-// It should look like this:
-/*
-class ShapeClipper extends CustomClipper<Path> {
-  final Path path;
-
-  ShapeClipper({required this.path});
-
-  @override
-  Path getClip(Size size) {
-    // The path here is already pre-calculated based on the desired shape.
-    // We just return it. The size parameter in getClip is the size of the widget being clipped.
-    // If your path creation depends on the widget's final render size,
-    // you'd recalculate it here based on `size`.
-    // For our specific use, the path is generated in _getAlbumArtPath with the target size.
-    return path;
+  // ─── Small control (shuffle/loop) ───
+  Widget _buildSmallControl(String assetPath, VoidCallback onTap, {bool active = false}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: active ? const Color(0xFFFF0505).withValues(alpha: 0.2) : Colors.transparent,
+          border: Border.all(
+            color: active ? const Color(0xFFFF0505) : Colors.white38,
+            width: 1.5,
+          ),
+        ),
+        child: Center(
+          child: Image.asset(
+            assetPath,
+            height: 18,
+            color: active ? const Color(0xFFFF0505) : Colors.white54,
+          ),
+        ),
+      ),
+    );
   }
 
-  @override
-  bool shouldReclip(ShapeClipper oldClipper) => oldClipper.path != path;
+  // ─── Persona-styled button ───
+  Widget _buildPersonaButton(String text, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFF0505),
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontFamily: 'Persona',
+            fontSize: 16,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
 }
-*/
