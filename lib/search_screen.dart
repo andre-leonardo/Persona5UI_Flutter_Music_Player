@@ -223,7 +223,6 @@ class _SearchScreenState extends State<SearchScreen> {
               onTap: () async {
                 if (realIndex >= 0) {
                   await audioHandler.playSongAt(realIndex);
-                  isPlayerVisible.value = true;
                   if (mounted) Navigator.pop(context);
                 }
               },

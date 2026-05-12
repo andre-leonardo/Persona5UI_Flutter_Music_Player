@@ -21,6 +21,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   bool _hasPermission = false;
+  Future<List<SongModel>>? _songsFuture;
 
   @override
   void initState() {
@@ -54,15 +55,43 @@ class _HomeScreenState extends State<HomeScreen> {
         bool status = await audioQuery.permissionsStatus();
         if (!status) status = await audioQuery.permissionsRequest();
         if (mounted) {
-          setState(() => _hasPermission = status);
+          setState(() {
+            _hasPermission = status;
+            if (status) {
+              _songsFuture = audioQuery.querySongs(
+                sortType: null,
+                orderType: OrderType.ASC_OR_SMALLER,
+                uriType: UriType.EXTERNAL,
+                ignoreCase: true,
+              );
+            }
+          });
           if (!status) showCustomToast(context, "Storage permission denied.");
         }
       } catch (e) {
         debugPrint("Permission error: $e");
-        if (mounted) setState(() => _hasPermission = true);
+        if (mounted) {
+          setState(() {
+            _hasPermission = true;
+            _songsFuture = audioQuery.querySongs(
+              sortType: null,
+              orderType: OrderType.ASC_OR_SMALLER,
+              uriType: UriType.EXTERNAL,
+              ignoreCase: true,
+            );
+          });
+        }
       }
     } else {
-      setState(() => _hasPermission = true);
+      setState(() {
+        _hasPermission = true;
+        _songsFuture = audioQuery.querySongs(
+          sortType: null,
+          orderType: OrderType.ASC_OR_SMALLER,
+          uriType: UriType.EXTERNAL,
+          ignoreCase: true,
+        );
+      });
     }
   }
 
@@ -71,32 +100,40 @@ class _HomeScreenState extends State<HomeScreen> {
     return ValueListenableBuilder<bool>(
       valueListenable: isPlayerVisible,
       builder: (context, playerIsVisible, _) {
-        if (playerIsVisible) return const SongScreen();
-
-        return Scaffold(
-          backgroundColor: Colors.black,
-          appBar: const CustomAppBar(),
-          bottomNavigationBar: _buildBottomNav(),
-          body: Stack(
-            children: [
-              // Main screen content
-              ValueListenableBuilder<AppScreen>(
-                valueListenable: currentAppScreen,
-                builder: (context, screen, _) {
-                  switch (screen) {
-                    case AppScreen.playlists:
-                      return const PlaylistScreen();
-                    case AppScreen.favorites:
-                      return const FavoritesScreen();
-                    case AppScreen.songs:
-                      return _buildSongsList();
-                  }
-                },
+        return Stack(
+          children: [
+            // Home screen (kept in the tree to preserve scroll state)
+            Offstage(
+              offstage: playerIsVisible,
+              child: Scaffold(
+                backgroundColor: Colors.black,
+                appBar: const CustomAppBar(),
+                bottomNavigationBar: _buildBottomNav(),
+                body: Stack(
+                  children: [
+                    // Main screen content
+                    ValueListenableBuilder<AppScreen>(
+                      valueListenable: currentAppScreen,
+                      builder: (context, screen, _) {
+                        return IndexedStack(
+                          index: screen.index,
+                          children: [
+                            _buildSongsList(),
+                            const PlaylistScreen(),
+                            const FavoritesScreen(),
+                          ],
+                        );
+                      },
+                    ),
+                    // Mini-player at the bottom
+                    _buildMiniPlayer(),
+                  ],
+                ),
               ),
-              // Mini-player at the bottom
-              _buildMiniPlayer(),
-            ],
-          ),
+            ),
+            // Song screen (only built when visible)
+            if (playerIsVisible) const SongScreen(),
+          ],
         );
       },
     );
@@ -254,13 +291,12 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    if (_songsFuture == null) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFFFF0505)));
+    }
+
     return FutureBuilder<List<SongModel>>(
-      future: audioQuery.querySongs(
-        sortType: null,
-        orderType: OrderType.ASC_OR_SMALLER,
-        uriType: UriType.EXTERNAL,
-        ignoreCase: true,
-      ),
+      future: _songsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -389,7 +425,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           onTap: () async {
             await audioHandler.playSongAt(index);
-            isPlayerVisible.value = true;
           },
         ),
       ),

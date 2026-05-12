@@ -605,7 +605,6 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   Future<void> _playPlaylist(int startIndex) async {
     if (_playlistSongs.isEmpty) return;
     await audioHandler.playFromCustomQueue(_playlistSongs, startIndex);
-    isPlayerVisible.value = true;
   }
 
   @override

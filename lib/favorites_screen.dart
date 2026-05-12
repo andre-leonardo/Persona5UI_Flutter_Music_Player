@@ -115,7 +115,6 @@ class FavoritesScreen extends StatelessWidget {
                         onTap: () async {
                           if (realIndex >= 0) {
                             await audioHandler.playSongAt(realIndex);
-                            isPlayerVisible.value = true;
                           }
                         },
                       ),
